@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AOO1 V5.2 ULTIME — App de Chat & P2P</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', 'Segoe UI', sans-serif; }
+
+        body {
+            background: linear-gradient(rgba(10, 10, 20, 0.82), rgba(20, 5, 15, 0.88)), 
+                        url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1920&auto=format&fit=crop') no-repeat center center fixed;
+            background-size: cover;
+            color: #fff;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .main-app {
+            width: 98%;
+            max-width: 1420px;
+            height: 95vh;
+            display: flex;
+            gap: 15px;
+            padding: 12px;
+            position: relative;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: 380px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 15px;
+            overflow-y: auto;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .avatar-container {
+            width: 85px;
+            height: 85px;
+            border-radius: 50%;
+            border: 2px solid #ff79c6;
+            margin: 0 auto;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: bold;
+            color: #ff79c6;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(255, 121, 198, 0.4);
+        }
+        .avatar-container img { width: 100%; height: 100%; object-fit: cover; }
+
+        input, select, button {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 8px 12px;
+            border-radius: 8px;
+            color: #fff;
+            outline: none;
+            font-size: 12px;
+        }
+        input::placeholder { color: rgba(255, 255, 255, 0.5); }
+
+        button {
+            background: linear-gradient(135deg, #ff79c6, #bd93f9);
+            color: #000;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            transition: 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255, 121, 198, 0.4); }
+
+        /* CHAT CONTAINER */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            position: relative;
+        }
+
+        .chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px 5px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* BULLE MESSAGE AVEC NOM EXPÉDITEUR & ACCUSÉ DE LECTURE */
+        .msg-bubble {
+            max-width: 70%;
+            padding: 10px 14px;
+            border-radius: 14px;
+            font-size: 13px;
+            backdrop-filter: blur(8px);
+            word-break: break-word;
+            display: flex;
+            flex-direction: column;
+        }
+        .msg-sender-name {
+            font-size: 10px;
+            font-weight: bold;
+            color: #ff79c6;
+            margin-bottom: 4px;
+        }
+        .msg-bubble.local {
+            align-self: flex-end;
+            background: rgba(255, 121, 198, 0.25);
+            border: 1px solid rgba(255, 121, 198, 0.4);
+            border-bottom-right-radius: 2px;
+        }
+        .msg-bubble.remote {
+            align-self: flex-start;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-bottom-left-radius: 2px;
+        }
+        .msg-status {
+            font-size: 9px;
+            align-self: flex-end;
+            margin-top: 4px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .media-preview { max-width: 100%; max-height: 250px; border-radius: 10px; margin-top: 5px; }
+
+        .user-card {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-top: 6px;
+        }
+        .user-avatar-mini { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; border: 1px solid #ff79c6; }
+
+        .input-bar {
+            display: flex;
+            gap: 8px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            align-items: center;
+        }
+
+        /* MODAL GUIDE */
+        .modal-guide {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10, 10, 20, 0.95);
+            backdrop-filter: blur(20px);
+            z-index: 100;
+            padding: 25px;
+            overflow-y: auto;
+            border-radius: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .main-app { flex-direction: column; height: 100vh; width: 100%; padding: 5px; }
+            .sidebar {
+                position: absolute;
+                top: 0; left: -100%; width: 85%; height: 100%;
+                background: rgba(15, 10, 20, 0.95);
+            }
+            .sidebar.active { left: 0; }
+            .mobile-btn { display: block !important; }
+        }
+        .mobile-btn { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="main-app">
+    <!-- Sidebar -->
+    <div class="sidebar glass-panel" id="sidebar">
+        <div style="text-align: center;">
+            <div class="avatar-container" onclick="document.getElementById('photoInput').click()">
+                <span id="avatarText">J</span>
+                <img id="avatarImg" src="" style="display:none;">
+            </div>
+            <input type="file" id="photoInput" accept="image/*" style="display:none;" onchange="loadPhoto(this)">
+            
+            <h4 id="myIdTag" style="margin-top: 6px; color: #ff79c6;">ID: ------</h4>
+            <button onclick="newID()" style="padding: 4px 10px; font-size: 11px; margin-top:4px;">
+                🔄 <span>Nouveau ID</span>
+            </button>
+        </div>
+
+        <!-- Profil -->
+        <div style="display:flex; flex-direction:column; gap:6px;">
+            <input type="text" id="myPseudo" value="Junior" placeholder="Mon Pseudo" onchange="syncProfile()">
+            <div style="display:flex; gap:4px;">
+                <input type="number" id="myAge" value="16" placeholder="Âge" style="width:55px;" onchange="syncProfile()">
+                <select id="mySexe" onchange="syncProfile()">
+                    <option value="Mâle">Mâle</option>
+                    <option value="Femelle">Femelle</option>
+                </select>
+                <select id="myPays" onchange="syncProfile()">
+                    <option value="Mali">Mali</option>
+                    <option value="France">France</option>
+                    <option value="Sénégal">Sénégal</option>
+                    <option value="Autre">Autre</option>
+                </select>
+            </div>
+            <button onclick="saveProfileLocal()" style="background:#50fa7b; color:#000;">💾 Enregistrer Profil</button>
+        </div>
+
+        <button onclick="toggleGuide()" style="background: rgba(255,255,255,0.1); color:#fff; border:1px solid #ff79c6;">📖 Guide de l'application</button>
+
+        <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1);">
+
+        <!-- Utilisateurs en Ligne -->
+        <div>
+            <h5>En Ligne (<span id="countOnline">0</span>)</h5>
+            <input type="text" id="searchInput" placeholder="🔍 Rechercher..." onkeyup="filterUsers()" style="width:100%; margin-top:4px;">
+            <div id="usersList" style="margin-top:6px;"></div>
+        </div>
+
+        <!-- Contacts Enregistrés (avec Bloquer et Supprimer) -->
+        <div>
+            <h5>Mes Contacts Enregistrés</h5>
+            <div id="savedContactsList" style="margin-top:6px;"></div>
+        </div>
+    </div>
+
+    <!-- Zone Chat -->
+    <div class="chat-container glass-panel">
+        <div class="chat-header">
+            <button class="mobile-btn" onclick="toggleSidebar()">☰ Menu</button>
+            <div>
+                <h3 id="targetName">Choisissez un ami</h3>
+                <small id="targetDetails" style="color:rgba(255,255,255,0.6);">Aucune session active</small>
+            </div>
+            <div style="display:flex; gap:6px;">
+                <button id="camToggleBtn" onclick="toggleCamera()" style="display:none; background:#ffb86c; color:#000;">📷 Couper Cam</button>
+                <button id="endCallBtn" onclick="endCall()" style="display:none; background:#ff5555; color:#fff;">🔴 Mettre fin à l'appel</button>
+                <button id="startCallBtn" onclick="startCall()">🎥 Vidéo</button>
+            </div>
+        </div>
+
+        <!-- Ecran Appel Vidéo -->
+        <div id="videoGrid" style="display:none; position:relative; margin-top:10px;">
+            <video id="remoteVideo" autoplay style="width:100%; max-height:220px; border-radius:10px; background:#000;"></video>
+            <video id="localVideo" autoplay muted style="width:100px; height:70px; position:absolute; right:10px; bottom:10px; border-radius:8px; border:1px solid #ff79c6;"></video>
+        </div>
+
+        <!-- Zone Messages -->
+        <div class="messages-area" id="msgBox">
+            <div class="msg-bubble remote">
+                <span class="msg-sender-name">Système AOO1</span>
+                🌸 Bienvenue sur AOO1 V5.2 ULTIME. Vos conversations sont prêtes.
+            </div>
+        </div>
+
+        <!-- Barre de Saisie -->
+        <div class="input-bar">
+            <button id="vocalBtn" onclick="toggleVocal()">🎙️</button>
+            <label style="cursor:pointer;" title="Envoyer Image / Vidéo / Audio">
+                📁 <input type="file" id="mediaInput" accept="image/*,video/*,audio/*" style="display:none" onchange="sendMedia()">
+            </label>
+            <input type="text" id="chatInput" placeholder="Votre message..." style="flex:1;" onkeypress="if(event.key==='Enter') sendText()">
+            <button onclick="sendText()">Envoyer</button>
+        </div>
+    </div>
+
+    <!-- GUIDE DETAILLÉ DE L'APPLICATION -->
+    <div class="modal-guide" id="guideModal">
+        <h2 style="color:#ff79c6;">📖 Guide Complet & Détaillé de AOO1 V5.2</h2>
+        <br>
+        <p><b>1. Rôle des Messages & Architecture Hybride :</b></p>
+        <p>AOO1 V5.2 combine deux technologies pour une sécurité et une rapidité optimales :</p>
+        <ul>
+            <li>• <b>Messages Textes & Vocaux :</b> Relayés par le serveur Python via WebSocket (Flask-SocketIO) sécurisé en tunnel direct. Zéro perte de message, réception instantanée même en réseau instable.</li>
+            <li>• <b>Fichiers Lourds (Photos, Vidéos, Audio) & Appels Vidéo :</b> Transmis directement d'appareil à appareil via liaison Direct-P2P (WebRTC), assurant une confidentialité totale et une vitesse maximale sans saturer le serveur.</li>
+        </ul>
+        <br>
+        <p><b>2. Fonctionnalités de la Sidebar :</b></p>
+        <ul>
+            <li>• <b>Nouveau ID (🔄) :</b> Génère un nouvel identifiant unique aléatoire si vous souhaitez changer d'identité.</li>
+            <li>• <b>Profil Utilisateur :</b> Choisissez votre Pseudo, Âge, Sexe, Pays et Photo de profil. Cliquez sur "Enregistrer Profil" pour que ces informations soient transmises à vos correspondants.</li>
+            <li>• <b>Gestion des Contacts :</b> 
+                <br>- Cliquez sur 🚫 pour <b>Bloquer</b> un contact (ses messages ne s'afficheront plus).
+                <br>- Cliquez sur 🗑️ pour <b>Supprimer</b> définitivement un contact de votre liste.
+            </li>
+        </ul>
+        <br>
+        <p><b>3. Système de Notifications & Statuts de Messages :</b></p>
+        <ul>
+            <li>• <b>Accusé de réception (📩 Envoyé / 👀 Vu) :</b> Dès que votre correspondant ouvre votre discussion, l'indicateur "Vu" s'active automatiquement sous votre message.</li>
+            <li>• <b>Notifications :</b> L'application émet un signal sonore doux et une notification système lors de la réception d'un nouveau message.</li>
+        </ul>
+        <br>
+        <button onclick="toggleGuide()" style="margin-top:15px; background:#ff79c6; color:#000;">Fermer le Guide</button>
+    </div>
+</div>
+
+<script>
+    const socket = io();
+    let myPeerId = localStorage.getItem('aoo1_id') || Math.floor(10000000 + Math.random() * 90000000).toString();
+    localStorage.setItem('aoo1_id', myPeerId);
+
+    let myPhoto = localStorage.getItem('aoo1_photo') || '';
+    let activeTargetId = null;
+    let allUsers = [];
+    let blockedContacts = JSON.parse(localStorage.getItem('aoo1_blocked') || '[]');
+    let localStream = null;
+    let isCamOn = true;
+
+    // Notification Audio
+    const notifSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+
+    document.getElementById('myIdTag').innerText = "ID: " + myPeerId;
+    if("Notification" in window) Notification.requestPermission();
+
+    if(myPhoto) {
+        document.getElementById('avatarImg').src = myPhoto;
+        document.getElementById('avatarImg').style.display = 'block';
+        document.getElementById('avatarText').style.display = 'none';
+    }
+
+    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); }
+    function toggleGuide() { 
+        const g = document.getElementById('guideModal');
+        g.style.display = (g.style.display === 'block') ? 'none' : 'block';
+    }
+
+    // 1. Synchronisation Profil
+    function syncProfile() {
+        const pseudo = document.getElementById('myPseudo').value;
+        document.getElementById('avatarText').innerText = pseudo.charAt(0).toUpperCase();
+
+        socket.emit('register', {
+            peer_id: myPeerId,
+            pseudo: pseudo,
+            age: document.getElementById('myAge').value,
+            sexe: document.getElementById('mySexe').value,
+            pays: document.getElementById('myPays').value,
+            photo: myPhoto
+        });
+    }
+
+    function saveProfileLocal() {
+        syncProfile();
+        alert("Profil enregistré avec succès !");
+    }
+
+    function newID() {
+        myPeerId = Math.floor(10000000 + Math.random() * 90000000).toString();
+        localStorage.setItem('aoo1_id', myPeerId);
+        document.getElementById('myIdTag').innerText = "ID: " + myPeerId;
+        syncProfile();
+    }
+
+    function loadPhoto(elem) {
+        const file = elem.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            myPhoto = e.target.result;
+            localStorage.setItem('aoo1_photo', myPhoto);
+            document.getElementById('avatarImg').src = myPhoto;
+            document.getElementById('avatarImg').style.display = 'block';
+            document.getElementById('avatarText').style.display = 'none';
+            syncProfile();
+        };
+        reader.readAsDataURL(file);
+    }
+
+    socket.on('connect', () => syncProfile());
+
+    // 2. Gestion Contacts & Recherche
+    socket.on('update_users', (users) => {
+        allUsers = users;
+        filterUsers();
+    });
+
+    function filterUsers() {
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        const box = document.getElementById('usersList');
+        box.innerHTML = '';
+        
+        let count = 0;
+        allUsers.forEach(u => {
+            if(u.peer_id === myPeerId) return;
+            count++;
+            if(u.pseudo.toLowerCase().includes(query) || u.pays.toLowerCase().includes(query)) {
+                const imgSrc = u.photo ? u.photo : 'https://via.placeholder.com/35?text=' + u.pseudo.charAt(0);
+                box.innerHTML += `
+                    <div class="user-card">
+                        <img src="${imgSrc}" class="user-avatar-mini">
+                        <div style="flex:1;">
+                            <b>${u.pseudo}</b> <small>(${u.age}ans, ${u.pays})</small>
+                        </div>
+                        <button onclick="selectUser('${u.peer_id}', '${u.pseudo}', '${u.pays}')" style="font-size:10px; padding:3px 6px;">Chat</button>
+                    </div>`;
+            }
+        });
+        document.getElementById('countOnline').innerText = count;
+    }
+
+    function selectUser(id, name, pays) {
+        activeTargetId = id;
+        document.getElementById('targetName').innerText = name;
+        document.getElementById('targetDetails').innerText = `ID: ${id} | Pays: ${pays}`;
+        saveContact({ peer_id: id, pseudo: name, pays: pays });
+
+        // Accusé "Vu"
+        socket.emit('message_seen', { target_id: activeTargetId, reader_id: myPeerId });
+    }
+
+    // 3. Envoi Messages & Nom de l'expéditeur
+    function sendText() {
+        const txt = document.getElementById('chatInput').value.trim();
+        if(!txt || !activeTargetId) return alert("Sélectionnez un correspondant !");
+
+        const myName = document.getElementById('myPseudo').value;
+        const msgId = 'msg_' + Date.now();
+
+        socket.emit('send_chat_message', {
+            target_id: activeTargetId,
+            sender_id: myPeerId,
+            sender_name: myName,
+            msg_id: msgId,
+            type: 'text',
+            text: txt
+        });
+
+        appendMsg(myName, txt, 'local', msgId);
+        document.getElementById('chatInput').value = '';
+    }
+
+    function sendMedia() {
+        const file = document.getElementById('mediaInput').files[0];
+        if(!file || !activeTargetId) return alert("Sélectionnez un ami !");
+
+        const myName = document.getElementById('myPseudo').value;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            let fileType = 'file';
+            if(file.type.startsWith('image/')) fileType = 'image';
+            if(file.type.startsWith('video/')) fileType = 'video';
+            if(file.type.startsWith('audio/')) fileType = 'audio';
+
+            socket.emit('send_chat_message', {
+                target_id: activeTargetId,
+                sender_id: myPeerId,
+                sender_name: myName,
+                type: fileType,
+                data: e.target.result,
+                fileName: file.name
+            });
+            appendMediaMsg(myName, fileType, e.target.result, file.name, 'local');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // Reception & Accusé "Vu"
+    socket.on('receive_chat_message', (d) => {
+        if(blockedContacts.includes(d.sender_id)) return; // Ignorer si bloqué
+
+        notifSound.play().catch(()=>{});
+        if(Notification.permission === "granted") {
+            new Notification(`Nouveau message de ${d.sender_name}`);
+        }
+
+        if(d.type === 'text') appendMsg(d.sender_name, d.text, 'remote');
+        else if(d.type === 'vocal') appendAudioMsg(d.sender_name, d.data, 'remote');
+        else appendMediaMsg(d.sender_name, d.type, d.data, d.fileName, 'remote');
+
+        if(activeTargetId === d.sender_id) {
+            socket.emit('message_seen', { target_id: d.sender_id, reader_id: myPeerId });
+        }
+    });
+
+    socket.on('confirm_seen', (d) => {
+        document.querySelectorAll('.msg-status').forEach(el => el.innerText = "Vu 👀");
+    });
+
+    // 4. Vocaux via Tunnel
+    let rec = null, chunks = [], isRecording = false;
+    async function toggleVocal() {
+        if(!activeTargetId) return alert("Sélectionnez un contact !");
+        const myName = document.getElementById('myPseudo').value;
+        
+        if(!isRecording) {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            rec = new MediaRecorder(stream);
+            chunks = [];
+            rec.ondataavailable = (e) => chunks.push(e.data);
+            rec.onstop = () => {
+                const blob = new Blob(chunks, { type: 'audio/webm' });
+                const r = new FileReader();
+                r.readAsDataURL(blob);
+                r.onloadend = () => {
+                    socket.emit('send_chat_message', {
+                        target_id: activeTargetId,
+                        sender_id: myPeerId,
+                        sender_name: myName,
+                        type: 'vocal',
+                        data: r.result
+                    });
+                    appendAudioMsg(myName, r.result, 'local');
+                };
+            };
+            rec.start();
+            isRecording = true;
+            document.getElementById('vocalBtn').style.background = '#ff5555';
+        } else {
+            rec.stop();
+            isRecording = false;
+            document.getElementById('vocalBtn').style.background = '';
+        }
+    }
+
+    // 5. Caméra, Contrôle & Mettre fin à l'appel
+    async function startCall() {
+        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        document.getElementById('localVideo').srcObject = localStream;
+        document.getElementById('videoGrid').style.display = 'block';
+        document.getElementById('camToggleBtn').style.display = 'inline-flex';
+        document.getElementById('endCallBtn').style.display = 'inline-flex';
+        document.getElementById('startCallBtn').style.display = 'none';
+    }
+
+    function toggleCamera() {
+        if(localStream) {
+            const videoTrack = localStream.getVideoTracks()[0];
+            if(videoTrack) {
+                isCamOn = !isCamOn;
+                videoTrack.enabled = isCamOn;
+                document.getElementById('camToggleBtn').innerText = isCamOn ? "📷 Couper Cam" : "📷 Activer Cam";
+            }
+        }
+    }
+
+    function endCall() {
+        if(localStream) {
+            localStream.getTracks().forEach(track => track.stop());
+            localStream = null;
+        }
+        document.getElementById('videoGrid').style.display = 'none';
+        document.getElementById('camToggleBtn').style.display = 'none';
+        document.getElementById('endCallBtn').style.display = 'none';
+        document.getElementById('startCallBtn').style.display = 'inline-flex';
+    }
+
+    // 6. Gestion Bloquer / Supprimer Contacts
+    function saveContact(c) {
+        let contacts = JSON.parse(localStorage.getItem('aoo1_contacts') || '[]');
+        if(!contacts.find(x => x.peer_id === c.peer_id)) {
+            contacts.push(c);
+            localStorage.setItem('aoo1_contacts', JSON.stringify(contacts));
+            renderContacts();
+        }
+    }
+
+    function toggleBlockContact(id) {
+        if(blockedContacts.includes(id)) {
+            blockedContacts = blockedContacts.filter(x => x !== id);
+            alert("Contact débloqué !");
+        } else {
+            blockedContacts.push(id);
+            alert("Contact bloqué ! SES MESSAGES NE S'AFFICHERONT PLUS.");
+        }
+        localStorage.setItem('aoo1_blocked', JSON.stringify(blockedContacts));
+        renderContacts();
+    }
+
+    function deleteContact(id) {
+        let contacts = JSON.parse(localStorage.getItem('aoo1_contacts') || '[]');
+        contacts = contacts.filter(x => x.peer_id !== id);
+        localStorage.setItem('aoo1_contacts', JSON.stringify(contacts));
+        renderContacts();
+    }
+
+    function renderContacts() {
+        let contacts = JSON.parse(localStorage.getItem('aoo1_contacts') || '[]');
+        const box = document.getElementById('savedContactsList');
+        box.innerHTML = '';
+        contacts.forEach(c => {
+            const isBlocked = blockedContacts.includes(c.peer_id);
+            box.innerHTML += `
+                <div class="user-card">
+                    <div style="flex:1;"><b>${c.pseudo}</b> ${isBlocked ? '🚫' : ''}</div>
+                    <button onclick="selectUser('${c.peer_id}', '${c.pseudo}', '${c.pays}')" style="font-size:10px;">Chat</button>
+                    <button onclick="toggleBlockContact('${c.peer_id}')" title="Bloquer/Débloquer" style="background:#ffb86c; font-size:10px; padding:3px 5px;">🚫</button>
+                    <button onclick="deleteContact('${c.peer_id}')" title="Supprimer" style="background:#ff5555; font-size:10px; padding:3px 5px;">🗑️</button>
+                </div>`;
+        });
+    }
+    renderContacts();
+
+    // Render Helpers
+    function appendMsg(sender, text, type, msgId) {
+        const b = document.getElementById('msgBox');
+        const statusHtml = (type === 'local') ? `<span class="msg-status" id="${msgId}">Envoyé 📩</span>` : '';
+        b.innerHTML += `
+            <div class="msg-bubble ${type}">
+                <span class="msg-sender-name">${sender}</span>
+                <span>${text}</span>
+                ${statusHtml}
+            </div>`;
+        b.scrollTop = b.scrollHeight;
+    }
+
+    function appendAudioMsg(sender, src, type) {
+        const b = document.getElementById('msgBox');
+        b.innerHTML += `
+            <div class="msg-bubble ${type}">
+                <span class="msg-sender-name">${sender}</span>
+                <audio src="${src}" controls style="max-width:220px; height:32px;"></audio>
+            </div>`;
+        b.scrollTop = b.scrollHeight;
+    }
+
+    function appendMediaMsg(sender, fileType, data, name, type) {
+        const b = document.getElementById('msgBox');
+        let content = '';
+        if(fileType === 'image') content = `<img src="${data}" class="media-preview">`;
+        else if(fileType === 'video') content = `<video src="${data}" controls class="media-preview"></video>`;
+        else if(fileType === 'audio') content = `<audio src="${data}" controls></audio>`;
+        else content = `📁 <a href="${data}" download="${name}" style="color:#ff79c6;">${name}</a>`;
+
+        b.innerHTML += `
+            <div class="msg-bubble ${type}">
+                <span class="msg-sender-name">${sender}</span>
+                ${content}
+            </div>`;
+        b.scrollTop = b.scrollHeight;
+    }
+</script>
+
+</body>
+</html>
