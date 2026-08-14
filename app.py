@@ -1,4 +1,8 @@
-﻿from flask import Flask, render_template, request
+import eventlet
+eventlet.monkey_patch()
+
+import os
+from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit, join_room, leave_room
 
 app = Flask(__name__)
@@ -60,5 +64,6 @@ def handle_disconnect():
         emit('update_users', list(users_online.values()), broadcast=True)
 
 if __name__ == '__main__':
-    print("🚀 Serveur AOO1 V5.2 ULTIME sur http://127.0.0.1:5000")
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    print(f"🚀 Serveur AOO1 V5.2 ULTIME sur le port {port}")
+    socketio.run(app, host='0.0.0.0', port=port, debug=False)
