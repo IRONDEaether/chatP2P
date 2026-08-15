@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit, join_room, leave_room
+import json
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'aoo1_v5_ultimate_secret'
@@ -15,7 +16,13 @@ def index():
 
 @socketio.on('register')
 def handle_register(profile):
-    peer_id = profile.get('peer_id')
+    try:
+        if isinstance(profile, str):
+            profile = json.loads(profile)
+    except Exception:
+        return
+
+    peer_id = profile.get('peer_id') if isinstance(profile, dict) else None
     if not peer_id:
         return
     
@@ -35,21 +42,39 @@ def handle_register(profile):
 # Envoi de message avec notification & accusé
 @socketio.on('send_chat_message')
 def handle_chat_message(data):
-    target_id = data.get('target_id')
+    try:
+        if isinstance(data, str):
+            data = json.loads(data)
+    except Exception:
+        return
+
+    target_id = data.get('target_id') if isinstance(data, dict) else None
     if target_id:
         emit('receive_chat_message', data, room=target_id)
 
 # Relais de confirmation "Vu" (Accusé de lecture)
 @socketio.on('message_seen')
 def handle_message_seen(data):
-    target_id = data.get('target_id')
+    try:
+        if isinstance(data, str):
+            data = json.loads(data)
+    except Exception:
+        return
+
+    target_id = data.get('target_id') if isinstance(data, dict) else None
     if target_id:
         emit('confirm_seen', data, room=target_id)
 
 # Signalement WebRTC P2P (Vidéo/Fin d'appel)
 @socketio.on('p2p_signal')
 def handle_p2p_signal(data):
-    target_id = data.get('target_id')
+    try:
+        if isinstance(data, str):
+            data = json.loads(data)
+    except Exception:
+        return
+
+    target_id = data.get('target_id') if isinstance(data, dict) else None
     if target_id:
         emit('p2p_signal', data, room=target_id)
 
