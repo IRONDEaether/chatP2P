@@ -1,7 +1,3 @@
-import eventlet
-eventlet.monkey_patch()
-
-import os
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit, join_room, leave_room
 
@@ -26,10 +22,10 @@ def handle_register(profile):
     users_online[request.sid] = {
         'sid': request.sid,
         'peer_id': peer_id,
-        'pseudo': profile.get('pseudo', 'Junior'),
-        'age': profile.get('age', '16'),
+        'pseudo': profile.get('pseudo') or 'Anonyme',
+        'age': profile.get('age') or '?',
         'sexe': profile.get('sexe', 'Mâle'),
-        'pays': profile.get('pays', 'Mali'),
+        'pays': profile.get('pays') or 'Non spécifié',
         'photo': profile.get('photo', '')
     }
     
@@ -64,6 +60,5 @@ def handle_disconnect():
         emit('update_users', list(users_online.values()), broadcast=True)
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    print(f"🚀 Serveur AOO1 V5.2 ULTIME sur le port {port}")
-    socketio.run(app, host='0.0.0.0', port=port, debug=False)
+    print("🚀 Serveur AOO1 V5.2 ULTIME sur http://127.0.0.1:5000")
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
