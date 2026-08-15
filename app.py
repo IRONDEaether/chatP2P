@@ -39,7 +39,6 @@ def handle_register(profile):
     join_room(peer_id)
     emit('update_users', list(users_online.values()), broadcast=True)
 
-# Envoi de message avec notification & accusé
 @socketio.on('send_chat_message')
 def handle_chat_message(data):
     try:
@@ -52,7 +51,6 @@ def handle_chat_message(data):
     if target_id:
         emit('receive_chat_message', data, room=target_id)
 
-# Relais de confirmation "Vu" (Accusé de lecture)
 @socketio.on('message_seen')
 def handle_message_seen(data):
     try:
@@ -65,7 +63,6 @@ def handle_message_seen(data):
     if target_id:
         emit('confirm_seen', data, room=target_id)
 
-# Signalement WebRTC P2P (Vidéo/Fin d'appel)
 @socketio.on('p2p_signal')
 def handle_p2p_signal(data):
     try:
@@ -80,9 +77,14 @@ def handle_p2p_signal(data):
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    if request.sid in users_online:
-        del users_online[request.sid]
-        emit('update_users', list(users_online.values()), broadcast=True)
+    try:
+        sid = request.sid
+        if sid in users_online:
+            del users_online[sid]
+            emit('update_users', list(users_online.values()), broadcast=True)
+    except RuntimeError:
+        # Empêche l'erreur "Working outside of request context" si le contexte est déjà détruit
+        pass
 
 if __name__ == '__main__':
     print("🚀 Serveur AOO1 V5.2 ULTIME sur http://127.0.0.1:5000")
