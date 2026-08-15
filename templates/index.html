@@ -256,9 +256,9 @@
 
         <!-- Profil -->
         <div style="display:flex; flex-direction:column; gap:6px;">
-            <input type="text" id="myPseudo" value="" placeholder="Mon Pseudo" onchange="syncProfile()">
+            <input type="text" id="myPseudo" value="" placeholder="Mon Pseudo" oninput="syncProfile()">
             <div style="display:flex; gap:4px;">
-                <input type="number" id="myAge" value="" placeholder="Âge" style="width:65px;" onchange="syncProfile()">
+                <input type="number" id="myAge" value="" placeholder="Âge" style="width:65px;" oninput="syncProfile()">
                 <select id="mySexe" onchange="syncProfile()" style="flex:1;">
                     <option value="Mâle">Mâle</option>
                     <option value="Femelle">Femelle</option>
@@ -346,7 +346,7 @@
         <p><b>1. Rôle des Messages & Architecture Hybride :</b></p>
         <p>AOO1 V5.2 combine deux technologies pour une sécurité et une rapidité optimales :</p>
         <ul>
-            <li>• <b>Messages Textes & Vocaux :</b> Relayés par le serveur Python via WebSocket (Flask-SocketIO) sécurisé en tunnel direct.</li>
+            <li>• <b>Messages Textes & Vocaux :</b> Relayés par le serveur Python via WebSocket (Flask-SocketIO).</li>
             <li>• <b>Fichiers Lourds & Appels Vidéo :</b> Transmis directement d'appareil à appareil via liaison Direct-P2P (WebRTC).</li>
         </ul>
         <br>
@@ -387,6 +387,12 @@
         document.getElementById('avatarText').style.display = 'none';
     }
 
+    // Charger les infos sauvegardées localement s'il y en a
+    if(localStorage.getItem('aoo1_pseudo')) document.getElementById('myPseudo').value = localStorage.getItem('aoo1_pseudo');
+    if(localStorage.getItem('aoo1_age')) document.getElementById('myAge').value = localStorage.getItem('aoo1_age');
+    if(localStorage.getItem('aoo1_sexe')) document.getElementById('mySexe').value = localStorage.getItem('aoo1_sexe');
+    if(localStorage.getItem('aoo1_pays')) document.getElementById('myPays').value = localStorage.getItem('aoo1_pays');
+
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); }
     function toggleGuide() { 
         const g = document.getElementById('guideModal');
@@ -395,6 +401,10 @@
 
     function syncProfile() {
         const pseudo = document.getElementById('myPseudo').value.trim();
+        const age = document.getElementById('myAge').value.trim();
+        const sexe = document.getElementById('mySexe').value;
+        const pays = document.getElementById('myPays').value;
+
         if(pseudo) {
             document.getElementById('avatarText').innerText = pseudo.charAt(0).toUpperCase();
         } else {
@@ -404,16 +414,20 @@
         socket.emit('register', {
             peer_id: myPeerId,
             pseudo: pseudo || 'Anonyme',
-            age: document.getElementById('myAge').value || '?',
-            sexe: document.getElementById('mySexe').value,
-            pays: document.getElementById('myPays').value || 'Non spécifié',
+            age: age || '?',
+            sexe: sexe,
+            pays: pays || 'Non spécifié',
             photo: myPhoto
         });
     }
 
     function saveProfileLocal() {
+        localStorage.setItem('aoo1_pseudo', document.getElementById('myPseudo').value);
+        localStorage.setItem('aoo1_age', document.getElementById('myAge').value);
+        localStorage.setItem('aoo1_sexe', document.getElementById('mySexe').value);
+        localStorage.setItem('aoo1_pays', document.getElementById('myPays').value);
         syncProfile();
-        alert("Profil enregistré avec succès !");
+        alert("Profil enregistré et synchronisé avec succès !");
     }
 
     function newID() {
@@ -438,7 +452,9 @@
         reader.readAsDataURL(file);
     }
 
-    socket.on('connect', () => syncProfile());
+    socket.on('connect', () => {
+        syncProfile();
+    });
 
     socket.on('update_users', (users) => {
         allUsers = users;
@@ -691,7 +707,7 @@
 
         b.innerHTML += `
             <div class="msg-bubble ${type}">
-                <span class="msg-sender-name">${sender}</span>
+                <span class="msg-sender-name">${sender}</b></span>
                 ${content}
             </div>`;
         b.scrollTop = b.scrollHeight;
