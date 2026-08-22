@@ -221,6 +221,9 @@
             border-radius: 16px;
         }
 
+        .mobile-btn { display: none; }
+
+        /* REGLES RESPONSIVE ADAPTATIVE */
         @media (max-width: 900px) {
             .main-app { 
                 flex-direction: column; 
@@ -248,7 +251,29 @@
             .msg-bubble { max-width: 85%; }
         }
 
-        .mobile-btn { display: none; }
+        /* Ajustement sur très petits écrans */
+        @media (max-width: 400px) {
+            .profile-inputs-row {
+                flex-wrap: wrap;
+            }
+            .profile-inputs-row input, 
+            .profile-inputs-row select {
+                flex: 1 1 100% !important;
+            }
+            .input-bar {
+                gap: 4px;
+            }
+            .input-bar input {
+                min-width: 0;
+            }
+        }
+
+        /* Support orientation paysage mobile */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .main-app { height: 100vh; }
+            .avatar-container { width: 50px; height: 50px; font-size: 20px; }
+            #videoGrid video#remoteVideo { max-height: 120px; }
+        }
     </style>
 </head>
 <body>
@@ -274,7 +299,7 @@
         <!-- Profil -->
         <div style="display:flex; flex-direction:column; gap:6px;">
             <input type="text" id="myPseudo" value="" placeholder="Mon Pseudo" oninput="syncProfile()">
-            <div style="display:flex; gap:4px;">
+            <div class="profile-inputs-row" style="display:flex; gap:4px;">
                 <input type="number" id="myAge" value="" placeholder="Âge" style="width:65px;" oninput="syncProfile()">
                 <select id="mySexe" onchange="syncProfile()" style="flex:1;">
                     <option value="Mâle">Mâle</option>
@@ -398,7 +423,7 @@
     let localStream = null;
     let isCamOn = true;
 
-    // 🔥 STOCKAGE EN LOCALSTORAGE DES DISCUSSIONS SÉPARÉES PAR PEER_ID
+    // STOCKAGE LOCALSTORAGE DES DISCUSSIONS SÉPARÉES
     let chatHistories = JSON.parse(localStorage.getItem('aoo1_chats') || '{}');
 
     const notifSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
@@ -507,13 +532,11 @@
         document.getElementById('countOnline').innerText = count;
     }
 
-    // 🔥 SELECTION D'UN USER + MISE A JOUR HEADER AVEC PHOTO
     function selectUser(id, name, pays, photo) {
         activeTargetId = id;
         document.getElementById('targetName').innerText = name;
         document.getElementById('targetDetails').innerText = `ID: ${id} | Pays: ${pays}`;
         
-        // Affichage photo de profil en haut
         const avatarBox = document.getElementById('targetAvatarBox');
         if(photo) {
             avatarBox.innerHTML = `<img src="${photo}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
@@ -531,7 +554,6 @@
         renderCurrentChat();
     }
 
-    // 🔥 CHARGEMENT ET RENDU EXCLUSIF DU CHAT SÉLECTIONNÉ
     function renderCurrentChat() {
         const b = document.getElementById('msgBox');
         b.innerHTML = '';
@@ -554,7 +576,6 @@
         b.scrollTop = b.scrollHeight;
     }
 
-    // 🔥 SAUVEGARDE STRICTEMENT DANS LE LOCALSTORAGE
     function saveMessageToHistory(peerId, msgObj) {
         if(!chatHistories[peerId]) {
             chatHistories[peerId] = [];
@@ -647,13 +668,9 @@
             isLocal: false
         };
 
-        // Sauvegarder dans la clé unique de l'expéditeur
         saveMessageToHistory(d.sender_id, msgObj);
-
-        // Mettre à jour sa photo s'il est enregistré
         updateContactPhoto(d.sender_id, d.sender_photo);
 
-        // Afficher directement si on est en train de lui parler
         if(activeTargetId === d.sender_id) {
             displayMsgOnScreen(msgObj);
             socket.emit('message_seen', { target_id: d.sender_id, reader_id: myPeerId });
@@ -813,7 +830,6 @@
         contacts = contacts.filter(x => x.peer_id !== id);
         localStorage.setItem('aoo1_contacts', JSON.stringify(contacts));
         
-        // Optionnel : Nettoyer l'historique de chat du contact supprimé
         delete chatHistories[id];
         localStorage.setItem('aoo1_chats', JSON.stringify(chatHistories));
 
