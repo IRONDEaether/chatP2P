@@ -119,11 +119,28 @@
             gap: 10px;
         }
 
-        .chat-header > div:nth-child(2) {
+        .header-user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
             flex: 1;
             overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+        }
+
+        .target-avatar-header {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 1px solid #ff79c6;
+            object-fit: cover;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #ff79c6;
+            font-size: 18px;
+            flex-shrink: 0;
         }
 
         .messages-area {
@@ -303,10 +320,15 @@
     <div class="chat-container glass-panel">
         <div class="chat-header">
             <button class="mobile-btn" onclick="toggleSidebar()">☰ Menu</button>
-            <div>
-                <h3 id="targetName" style="font-size: 16px;">Choisissez un ami</h3>
-                <small id="targetDetails" style="color:rgba(255,255,255,0.6); font-size: 11px;">Aucune session active</small>
+            
+            <div class="header-user-info">
+                <div class="target-avatar-header" id="targetAvatarBox">?</div>
+                <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    <h3 id="targetName" style="font-size: 16px;">Choisissez un ami</h3>
+                    <small id="targetDetails" style="color:rgba(255,255,255,0.6); font-size: 11px;">Aucune session active</small>
+                </div>
             </div>
+
             <div style="display:flex; gap:6px;">
                 <button id="camToggleBtn" onclick="toggleCamera()" style="display:none; background:#ffb86c; color:#000; font-size: 11px; padding: 6px 10px;">📷 Cam</button>
                 <button id="endCallBtn" onclick="endCall()" style="display:none; background:#ff5555; color:#fff; font-size: 11px; padding: 6px 10px;">🔴 Fin</button>
@@ -376,6 +398,9 @@
     let localStream = null;
     let isCamOn = true;
 
+    // 🔥 STOCKAGE EN LOCALSTORAGE DES DISCUSSIONS SÉPARÉES PAR PEER_ID
+    let chatHistories = JSON.parse(localStorage.getItem('aoo1_chats') || '{}');
+
     const notifSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
     document.getElementById('myIdTag').innerText = "ID: " + myPeerId;
@@ -387,7 +412,6 @@
         document.getElementById('avatarText').style.display = 'none';
     }
 
-    // Charger les infos sauvegardées localement s'il y en a
     if(localStorage.getItem('aoo1_pseudo')) document.getElementById('myPseudo').value = localStorage.getItem('aoo1_pseudo');
     if(localStorage.getItem('aoo1_age')) document.getElementById('myAge').value = localStorage.getItem('aoo1_age');
     if(localStorage.getItem('aoo1_sexe')) document.getElementById('mySexe').value = localStorage.getItem('aoo1_sexe');
@@ -452,9 +476,7 @@
         reader.readAsDataURL(file);
     }
 
-    socket.on('connect', () => {
-        syncProfile();
-    });
+    socket.on('connect', () => { syncProfile(); });
 
     socket.on('update_users', (users) => {
         allUsers = users;
@@ -478,24 +500,67 @@
                         <div style="flex:1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                             <b style="font-size: 12px;">${u.pseudo}</b> <small style="font-size: 10px;">(${u.age}ans, ${u.pays})</small>
                         </div>
-                        <button onclick="selectUser('${u.peer_id}', '${u.pseudo}', '${u.pays}')" style="font-size:10px; padding:4px 8px;">Chat</button>
+                        <button onclick="selectUser('${u.peer_id}', '${u.pseudo}', '${u.pays}', '${u.photo || ''}')" style="font-size:10px; padding:4px 8px;">Chat</button>
                     </div>`;
             }
         });
         document.getElementById('countOnline').innerText = count;
     }
 
-    function selectUser(id, name, pays) {
+    // 🔥 SELECTION D'UN USER + MISE A JOUR HEADER AVEC PHOTO
+    function selectUser(id, name, pays, photo) {
         activeTargetId = id;
         document.getElementById('targetName').innerText = name;
         document.getElementById('targetDetails').innerText = `ID: ${id} | Pays: ${pays}`;
-        saveContact({ peer_id: id, pseudo: name, pays: pays });
+        
+        // Affichage photo de profil en haut
+        const avatarBox = document.getElementById('targetAvatarBox');
+        if(photo) {
+            avatarBox.innerHTML = `<img src="${photo}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+        } else {
+            avatarBox.innerHTML = name.charAt(0).toUpperCase();
+        }
+
+        saveContact({ peer_id: id, pseudo: name, pays: pays, photo: photo });
 
         if(window.innerWidth <= 900) {
             toggleSidebar();
         }
 
         socket.emit('message_seen', { target_id: activeTargetId, reader_id: myPeerId });
+        renderCurrentChat();
+    }
+
+    // 🔥 CHARGEMENT ET RENDU EXCLUSIF DU CHAT SÉLECTIONNÉ
+    function renderCurrentChat() {
+        const b = document.getElementById('msgBox');
+        b.innerHTML = '';
+
+        if(!activeTargetId) {
+            b.innerHTML = `<div class="msg-bubble remote"><span class="msg-sender-name">Système AOO1</span>🌸 Veuillez sélectionner une discussion.</div>`;
+            return;
+        }
+
+        const history = chatHistories[activeTargetId] || [];
+        if(history.length === 0) {
+            b.innerHTML = `<div class="msg-bubble remote"><span class="msg-sender-name">Système AOO1</span>Début de la conversation.</div>`;
+            return;
+        }
+
+        history.forEach(m => {
+            displayMsgOnScreen(m);
+        });
+
+        b.scrollTop = b.scrollHeight;
+    }
+
+    // 🔥 SAUVEGARDE STRICTEMENT DANS LE LOCALSTORAGE
+    function saveMessageToHistory(peerId, msgObj) {
+        if(!chatHistories[peerId]) {
+            chatHistories[peerId] = [];
+        }
+        chatHistories[peerId].push(msgObj);
+        localStorage.setItem('aoo1_chats', JSON.stringify(chatHistories));
     }
 
     function sendText() {
@@ -505,16 +570,27 @@
         const myName = document.getElementById('myPseudo').value.trim() || 'Anonyme';
         const msgId = 'msg_' + Date.now();
 
+        const msgObj = {
+            sender: myName,
+            text: txt,
+            type: 'text',
+            isLocal: true,
+            msgId: msgId
+        };
+
         socket.emit('send_chat_message', {
             target_id: activeTargetId,
             sender_id: myPeerId,
             sender_name: myName,
+            sender_photo: myPhoto,
             msg_id: msgId,
             type: 'text',
             text: txt
         });
 
-        appendMsg(myName, txt, 'local', msgId);
+        saveMessageToHistory(activeTargetId, msgObj);
+        displayMsgOnScreen(msgObj);
+
         document.getElementById('chatInput').value = '';
     }
 
@@ -530,15 +606,26 @@
             if(file.type.startsWith('video/')) fileType = 'video';
             if(file.type.startsWith('audio/')) fileType = 'audio';
 
+            const msgObj = {
+                sender: myName,
+                type: fileType,
+                data: e.target.result,
+                fileName: file.name,
+                isLocal: true
+            };
+
             socket.emit('send_chat_message', {
                 target_id: activeTargetId,
                 sender_id: myPeerId,
                 sender_name: myName,
+                sender_photo: myPhoto,
                 type: fileType,
                 data: e.target.result,
                 fileName: file.name
             });
-            appendMediaMsg(myName, fileType, e.target.result, file.name, 'local');
+
+            saveMessageToHistory(activeTargetId, msgObj);
+            displayMsgOnScreen(msgObj);
         };
         reader.readAsDataURL(file);
     }
@@ -551,11 +638,24 @@
             new Notification(`Nouveau message de ${d.sender_name}`);
         }
 
-        if(d.type === 'text') appendMsg(d.sender_name, d.text, 'remote');
-        else if(d.type === 'vocal') appendAudioMsg(d.sender_name, d.data, 'remote');
-        else appendMediaMsg(d.sender_name, d.type, d.data, d.fileName, 'remote');
+        const msgObj = {
+            sender: d.sender_name,
+            type: d.type,
+            text: d.text,
+            data: d.data,
+            fileName: d.fileName,
+            isLocal: false
+        };
 
+        // Sauvegarder dans la clé unique de l'expéditeur
+        saveMessageToHistory(d.sender_id, msgObj);
+
+        // Mettre à jour sa photo s'il est enregistré
+        updateContactPhoto(d.sender_id, d.sender_photo);
+
+        // Afficher directement si on est en train de lui parler
         if(activeTargetId === d.sender_id) {
+            displayMsgOnScreen(msgObj);
             socket.emit('message_seen', { target_id: d.sender_id, reader_id: myPeerId });
         }
     });
@@ -563,6 +663,39 @@
     socket.on('confirm_seen', (d) => {
         document.querySelectorAll('.msg-status').forEach(el => el.innerText = "Vu 👀");
     });
+
+    function displayMsgOnScreen(m) {
+        const b = document.getElementById('msgBox');
+        const bubbleType = m.isLocal ? 'local' : 'remote';
+
+        if(m.type === 'text') {
+            const statusHtml = m.isLocal ? `<span class="msg-status" id="${m.msgId || ''}">Envoyé 📩</span>` : '';
+            b.innerHTML += `
+                <div class="msg-bubble ${bubbleType}">
+                    <span class="msg-sender-name">${m.sender}</span>
+                    <span>${m.text}</span>
+                    ${statusHtml}
+                </div>`;
+        } else if(m.type === 'vocal' || m.type === 'audio') {
+            b.innerHTML += `
+                <div class="msg-bubble ${bubbleType}">
+                    <span class="msg-sender-name">${m.sender}</span>
+                    <audio src="${m.data}" controls style="max-width:200px; height:32px;"></audio>
+                </div>`;
+        } else {
+            let content = '';
+            if(m.type === 'image') content = `<img src="${m.data}" class="media-preview">`;
+            else if(m.type === 'video') content = `<video src="${m.data}" controls class="media-preview"></video>`;
+            else content = `📁 <a href="${m.data}" download="${m.fileName}" style="color:#ff79c6;">${m.fileName}</a>`;
+
+            b.innerHTML += `
+                <div class="msg-bubble ${bubbleType}">
+                    <span class="msg-sender-name">${m.sender}</span>
+                    ${content}
+                </div>`;
+        }
+        b.scrollTop = b.scrollHeight;
+    }
 
     let rec = null, chunks = [], isRecording = false;
     async function toggleVocal() {
@@ -579,14 +712,24 @@
                 const r = new FileReader();
                 r.readAsDataURL(blob);
                 r.onloadend = () => {
+                    const msgObj = {
+                        sender: myName,
+                        type: 'vocal',
+                        data: r.result,
+                        isLocal: true
+                    };
+
                     socket.emit('send_chat_message', {
                         target_id: activeTargetId,
                         sender_id: myPeerId,
                         sender_name: myName,
+                        sender_photo: myPhoto,
                         type: 'vocal',
                         data: r.result
                     });
-                    appendAudioMsg(myName, r.result, 'local');
+
+                    saveMessageToHistory(activeTargetId, msgObj);
+                    displayMsgOnScreen(msgObj);
                 };
             };
             rec.start();
@@ -632,8 +775,22 @@
 
     function saveContact(c) {
         let contacts = JSON.parse(localStorage.getItem('aoo1_contacts') || '[]');
-        if(!contacts.find(x => x.peer_id === c.peer_id)) {
+        const existingIndex = contacts.findIndex(x => x.peer_id === c.peer_id);
+        if(existingIndex === -1) {
             contacts.push(c);
+        } else {
+            if(c.photo) contacts[existingIndex].photo = c.photo;
+        }
+        localStorage.setItem('aoo1_contacts', JSON.stringify(contacts));
+        renderContacts();
+    }
+
+    function updateContactPhoto(peerId, photo) {
+        if(!photo) return;
+        let contacts = JSON.parse(localStorage.getItem('aoo1_contacts') || '[]');
+        const target = contacts.find(x => x.peer_id === peerId);
+        if(target) {
+            target.photo = photo;
             localStorage.setItem('aoo1_contacts', JSON.stringify(contacts));
             renderContacts();
         }
@@ -655,6 +812,19 @@
         let contacts = JSON.parse(localStorage.getItem('aoo1_contacts') || '[]');
         contacts = contacts.filter(x => x.peer_id !== id);
         localStorage.setItem('aoo1_contacts', JSON.stringify(contacts));
+        
+        // Optionnel : Nettoyer l'historique de chat du contact supprimé
+        delete chatHistories[id];
+        localStorage.setItem('aoo1_chats', JSON.stringify(chatHistories));
+
+        if(activeTargetId === id) {
+            activeTargetId = null;
+            document.getElementById('targetName').innerText = "Choisissez un ami";
+            document.getElementById('targetDetails').innerText = "Aucune session active";
+            document.getElementById('targetAvatarBox').innerText = "?";
+            renderCurrentChat();
+        }
+
         renderContacts();
     }
 
@@ -664,54 +834,18 @@
         box.innerHTML = '';
         contacts.forEach(c => {
             const isBlocked = blockedContacts.includes(c.peer_id);
+            const photoSrc = c.photo ? c.photo : 'https://via.placeholder.com/35?text=' + (c.pseudo ? c.pseudo.charAt(0) : '?');
             box.innerHTML += `
                 <div class="user-card">
+                    <img src="${photoSrc}" class="user-avatar-mini">
                     <div style="flex:1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><b style="font-size: 12px;">${c.pseudo}</b> ${isBlocked ? '🚫' : ''}</div>
-                    <button onclick="selectUser('${c.peer_id}', '${c.pseudo}', '${c.pays}')" style="font-size:10px; padding:3px 6px;">Chat</button>
+                    <button onclick="selectUser('${c.peer_id}', '${c.pseudo}', '${c.pays}', '${c.photo || ''}')" style="font-size:10px; padding:3px 6px;">Chat</button>
                     <button onclick="toggleBlockContact('${c.peer_id}')" title="Bloquer/Débloquer" style="background:#ffb86c; font-size:10px; padding:3px 5px;">🚫</button>
                     <button onclick="deleteContact('${c.peer_id}')" title="Supprimer" style="background:#ff5555; font-size:10px; padding:3px 5px;">🗑️</button>
                 </div>`;
         });
     }
     renderContacts();
-
-    function appendMsg(sender, text, type, msgId) {
-        const b = document.getElementById('msgBox');
-        const statusHtml = (type === 'local') ? `<span class="msg-status" id="${msgId}">Envoyé 📩</span>` : '';
-        b.innerHTML += `
-            <div class="msg-bubble ${type}">
-                <span class="msg-sender-name">${sender}</span>
-                <span>${text}</span>
-                ${statusHtml}
-            </div>`;
-        b.scrollTop = b.scrollHeight;
-    }
-
-    function appendAudioMsg(sender, src, type) {
-        const b = document.getElementById('msgBox');
-        b.innerHTML += `
-            <div class="msg-bubble ${type}">
-                <span class="msg-sender-name">${sender}</span>
-                <audio src="${src}" controls style="max-width:200px; height:32px;"></audio>
-            </div>`;
-        b.scrollTop = b.scrollHeight;
-    }
-
-    function appendMediaMsg(sender, fileType, data, name, type) {
-        const b = document.getElementById('msgBox');
-        let content = '';
-        if(fileType === 'image') content = `<img src="${data}" class="media-preview">`;
-        else if(fileType === 'video') content = `<video src="${data}" controls class="media-preview"></video>`;
-        else if(fileType === 'audio') content = `<audio src="${data}" controls style="max-width:200px;"></audio>`;
-        else content = `📁 <a href="${data}" download="${name}" style="color:#ff79c6;">${name}</a>`;
-
-        b.innerHTML += `
-            <div class="msg-bubble ${type}">
-                <span class="msg-sender-name">${sender}</b></span>
-                ${content}
-            </div>`;
-        b.scrollTop = b.scrollHeight;
-    }
 </script>
 
 </body>
