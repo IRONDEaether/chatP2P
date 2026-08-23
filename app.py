@@ -11,19 +11,20 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 limiter = Limiter(
     get_remote_address,
     app=app,
-    default_limits=["500 per day", "100 per hour"],
+    default_limits=["5000 per day", "1000 per hour"],
     storage_uri="memory://"
 )
 
+# Support des medias lourds (images, audio, video) jusqu'a 50MB
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",
-    ping_timeout=10,
-    ping_interval=5,
-    max_http_buffer_size=1e7
+    ping_timeout=25,
+    ping_interval=10,
+    max_http_buffer_size=5e7
 )
 
-# Registre complet des utilisateurs connectés
+# Dictionnaire indexe directement par PEER_ID
 active_peers = {}
 
 @app.route('/')
@@ -32,13 +33,15 @@ def index():
 
 @socketio.on('connect')
 def handle_connect():
-    print(f"[+] Nouveau client : {request.sid}")
+    pass
 
 @socketio.on('register')
 def handle_register(data):
     peer_id = data.get('peer_id')
     if peer_id:
-        active_peers[request.sid] = {
+        join_room('global_room')
+        active_peers[peer_id] = {
+            'sid': request.sid,
             'peer_id': peer_id,
             'pseudo': data.get('pseudo', 'Anonyme'),
             'title': data.get('title', 'Novice Niv.1'),
@@ -47,46 +50,40 @@ def handle_register(data):
             'pays': data.get('pays', 'N/A'),
             'photo': data.get('photo', '')
         }
-        peers_list = list(active_peers.values())
-        emit('peer_discovery', peers_list, broadcast=True)
-
-@socketio.on('join_room')
-def handle_join(data):
-    room = data.get('room')
-    if room:
-        join_room(room)
-        if request.sid in active_peers:
-            active_peers[request.sid]['room'] = room
-        emit('peer_joined', {'peer_id': request.sid}, to=room, include_self=False)
+        # Diffusion instantanee de la liste des pairs connectes
+        emit('peer_discovery', list(active_peers.values()), to='global_room')
 
 @socketio.on('send_chat_message')
 def handle_chat_message(data):
-    # Diffusion du message à tout le réseau ou au destinataire ciblé
     target = data.get('target', 'main')
-    if target in ['main', 'fomo', 'talk'] or target.startsWith('custom_'):
-        emit('chat_message', data, broadcast=True, include_self=False)
+    # Message dans un salon public / groupe
+    if target in ['main', 'fomo', 'talk'] or str(target).startswith('custom_'):
+        emit('chat_message', data, to='global_room', include_self=False)
     else:
-        # Message privé pour un pair spécifique
-        for sid, p_data in active_peers.items():
-            if p_data['peer_id'] == target:
-                emit('chat_message', data, to=sid)
+        # Message prive cible
+        dest = active_peers.get(target)
+        if dest:
+            emit('chat_message', data, to=dest['sid'])
 
 @socketio.on('typing')
 def handle_typing(data):
-    emit('user_typing', data, broadcast=True, include_self=False)
+    emit('user_typing', data, to='global_room', include_self=False)
 
 @socketio.on('message_seen')
 def handle_seen(data):
-    emit('message_seen_ack', data, broadcast=True, include_self=False)
+    target = data.get('target')
+    if target and target in active_peers:
+        emit('message_seen_ack', data, to=active_peers[target]['sid'])
+    else:
+        emit('message_seen_ack', data, to='global_room', include_self=False)
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    peer_info = active_peers.pop(request.sid, None)
-    if peer_info:
-        peers_list = list(active_peers.values())
-        emit('peer_discovery', peers_list, broadcast=True)
-    print(f"[-] Client déconnecté : {request.sid}")
+    to_delete = [pid for pid, info in active_peers.items() if info['sid'] == request.sid]
+    for pid in to_delete:
+        del active_peers[pid]
+    emit('peer_discovery', list(active_peers.values()), to='global_room')
 
 if __name__ == '__main__':
-    print("🚀 Serveur AOO1 V1.7 Opérationnel sur le port 5000...")
+    print("🚀 Serveur AOO1 V1.7 FIX — Canal Reseau Direct Actif sur port 5000...")
     socketio.run(app, host='0.0.0.0', port=5000, debug=False)
