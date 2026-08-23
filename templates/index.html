@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AOO1 V1.6 — 50 Titres, Anti-Spam, Appel Vidéo & P2P Network</title>
+    <title>AOO1 V1.7 — P2P, Profils Complets, Statut Vu & Salons</title>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
@@ -112,15 +112,24 @@
         .user-card {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 6px 8px;
+            gap: 10px;
+            padding: 8px;
             background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 8px;
-            margin-top: 4px;
+            margin-top: 5px;
             cursor: pointer;
             transition: 0.2s;
         }
         .user-card:hover { background: rgba(255, 121, 198, 0.2); }
+        .user-card-img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid #50fa7b;
+            background: rgba(0,0,0,0.3);
+        }
 
         .salons-nav {
             display: flex;
@@ -170,7 +179,6 @@
             display: none;
         }
 
-        /* Module Vidéo P2P */
         .video-grid {
             display: none;
             grid-template-columns: 1fr 1fr;
@@ -217,6 +225,7 @@
             word-break: break-word;
             display: flex;
             flex-direction: column;
+            position: relative;
         }
         .msg-sender-name {
             font-size: 9px;
@@ -244,6 +253,14 @@
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
+
+        .msg-status {
+            font-size: 8px;
+            color: #aaa;
+            align-self: flex-end;
+            margin-top: 2px;
+        }
+        .msg-status.seen { color: #50fa7b; font-weight: bold; }
 
         .media-preview { max-width: 100%; max-height: 220px; border-radius: 8px; margin-top: 4px; }
 
@@ -312,6 +329,16 @@
             margin-top: 4px;
         }
 
+        .user-profile-modal-card {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid #ff79c6;
+            padding: 20px;
+            border-radius: 12px;
+            max-width: 400px;
+            margin: 50px auto;
+            text-align: center;
+        }
+
         @media (max-width: 820px) {
             .main-app { flex-direction: column; height: 100dvh; }
             .sidebar { width: 100%; min-width: 100%; max-height: 220px; }
@@ -333,7 +360,6 @@
             <h4 id="myIdTag" style="margin-top:2px; color:#ff79c6;">ID: ------</h4>
         </div>
 
-        <!-- Dashboard Dette / XP -->
         <div class="stats-bar">
             <div>
                 <div class="stat-val" id="myXP">0</div>
@@ -345,23 +371,21 @@
             </div>
         </div>
 
-        <!-- Registre Dette -->
         <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius:6px; padding:6px; font-size:9px;">
             <b>🧾 Registre de Dette :</b>
             <div id="debtDetailsBox" style="color:#aaa; margin-top:2px; max-height:40px; overflow-y:auto;">Aucune dette active.</div>
         </div>
 
-        <!-- Profil Miroir -->
         <div style="background: rgba(255,255,255,0.03); padding:6px; border-radius:6px; font-size:10px;">
             <b>🧠 Profil Miroir (Analyse) :</b>
             <div id="psychProfile" style="color:#bd93f9; margin-top:1px;">Calme & Analytique</div>
         </div>
 
-        <!-- Form Profil -->
+        <!-- Informations Personnelles -->
         <input type="text" id="myPseudo" placeholder="Mon Pseudo" oninput="syncProfile()">
         
         <div style="display:flex; gap:4px;">
-            <input type="number" id="myAge" placeholder="Âge" style="width:55px;" oninput="syncProfile()">
+            <input type="number" id="myAge" placeholder="Âge" style="width:65px;" oninput="syncProfile()">
             <select id="mySexe" onchange="syncProfile()" style="flex:1;">
                 <option value="Mâle">Mâle</option>
                 <option value="Femelle">Femelle</option>
@@ -386,8 +410,8 @@
 
         <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1);">
 
-        <h5 style="font-size:10px; color:#8be9fd;">👥 PAIRS EN LIGNE (P2P)</h5>
-        <div id="peersBox" style="max-height: 100px; overflow-y: auto;"></div>
+        <h5 style="font-size:10px; color:#8be9fd;">👥 PAIRS EN LIGNE (Cliquez pour voir profil/PV)</h5>
+        <div id="peersBox" style="max-height: 120px; overflow-y: auto;"></div>
 
         <div style="margin-top:auto;">
             <label style="font-size:9px;">🔊 Volume Notifications :</label>
@@ -431,9 +455,9 @@
             </div>
         </div>
 
-        <div class="messages-area" id="msgBox"></div>
+        <div class="messages-area" id="msgBox" onclick="triggerMessageSeen()"></div>
 
-        <!-- Formulaire Annonce Dédié quand on est dans le salon FOMO -->
+        <!-- Formulaire Annonce FOMO -->
         <div id="fomoInputContainer" class="fomo-form" style="display:none;">
             <b style="color:#ff79c6; font-size:10px;">📢 NOUVELLE ANNONCE SECRÈTE (-15 XP)</b>
             <input type="text" id="fomoTitle" placeholder="Titre de l'annonce...">
@@ -445,11 +469,33 @@
         <!-- Barre d'envoi standard -->
         <div class="input-bar" id="standardInputContainer">
             <button type="button" id="micBtn" class="rec-btn" onclick="toggleRecord()">🎤</button>
-            <label style="cursor:pointer; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); padding: 7px 9px; border-radius: 8px;" title="Envoyer Fichier / Media">
+            <label style="cursor:pointer; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); padding: 7px 9px; border-radius: 8px;" title="Envoyer Fichier / Photo">
                 📎 <input type="file" id="fileAttach" style="display:none" onchange="sendFile(this)">
             </label>
             <input type="text" id="chatInput" placeholder="Tapez votre message..." style="flex:1;" oninput="handleTyping()" onkeypress="if(event.key==='Enter') sendCurrentMsg()">
             <button onclick="sendCurrentMsg()">Envoyer (+1 XP)</button>
+        </div>
+    </div>
+
+    <!-- Modale Profil Utilisateur -->
+    <div class="modal" id="userProfileModal">
+        <div class="user-profile-modal-card glass-panel">
+            <div style="width:90px; height:90px; border-radius:50%; margin:0 auto; overflow:hidden; border:2px solid #50fa7b; background:#000;">
+                <img id="modalUserPhoto" src="" style="width:100%; height:100%; object-fit:cover;">
+            </div>
+            <h2 id="modalUserPseudo" style="color:#ff79c6; margin-top:10px;">---</h2>
+            <p id="modalUserTitle" style="color:#bd93f9; font-size:11px;">Novice</p>
+            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:10px 0;">
+            <div style="text-align:left; font-size:11px; line-height:1.8;">
+                <p>👤 <b>Âge :</b> <span id="modalUserAge">N/A</span> ans</p>
+                <p>⚧ <b>Sexe :</b> <span id="modalUserSexe">N/A</span></p>
+                <p>🌍 <b>Pays :</b> <span id="modalUserPays">N/A</span></p>
+                <p>🔑 <b>ID Pair :</b> <span id="modalUserId" style="color:#8be9fd;">------</span></p>
+            </div>
+            <div style="display:flex; gap:8px; margin-top:15px;">
+                <button id="modalUserChatBtn" style="flex:1; background:#50fa7b; color:#000;">💬 Ouvrir Chat PV</button>
+                <button onclick="closeUserProfile()" style="flex:1; background:#ff5555; color:#fff;">Fermer</button>
+            </div>
         </div>
     </div>
 
@@ -521,7 +567,6 @@
         };
     });
 
-    // ETAT DU SYSTEME
     let myXP = parseInt(localStorage.getItem('aoo1_xp') || '50');
     let myDebt = parseInt(localStorage.getItem('aoo1_debt') || '0');
     let debtRegistry = JSON.parse(localStorage.getItem('aoo1_debt_registry') || '{}');
@@ -540,7 +585,6 @@
     let isRecording = false, mediaRecorder, audioChunks = [];
     let typingTimeout;
 
-    // WebRTC Appel Vidéo Stream State
     let localStream = null;
     let currentMediaCall = null;
 
@@ -567,12 +611,11 @@
     if(localStorage.getItem('aoo1_sexe')) document.getElementById('mySexe').value = localStorage.getItem('aoo1_sexe');
     if(localStorage.getItem('aoo1_pays')) document.getElementById('myPays').value = localStorage.getItem('aoo1_pays');
 
-    // WEBRTC INIT
+    // WEBRTC PEERJS INIT
     const peer = new Peer(myPeerId);
     peer.on('open', (id) => { syncProfile(); });
     peer.on('connection', (conn) => { registerConnection(conn); });
 
-    // Reception Appel Vidéo P2P Entrant
     peer.on('call', (call) => {
         const callerName = onlinePeersData[call.peer]?.pseudo || call.peer;
         if(confirm(`📹 Appel vidéo entrant de ${callerName}. Accepter ?`)) {
@@ -639,15 +682,6 @@
     }
 
     function handleIncomingData(data, senderId) {
-        if (data.type === 'typing') {
-            if (activeTarget === senderId || activeTarget === currentSalon) {
-                document.getElementById('typingNotice').innerText = `${data.pseudo} écrit...`;
-                clearTimeout(typingTimeout);
-                typingTimeout = setTimeout(() => { document.getElementById('typingNotice').innerText = ''; }, 2000);
-            }
-            return;
-        }
-
         notifSound.play().catch(()=>{});
 
         if (data.type === 'fomo_announcement') {
@@ -659,9 +693,11 @@
         } else if (data.type === 'pay_debt_step') {
             myXP += data.amount;
             updateStatsUI();
-        } else {
+        } else if (data.type === 'chat') {
             displayMsg({
+                msgId: data.msgId,
                 sender: data.pseudo,
+                senderId: data.sender_id,
                 title: data.title,
                 text: data.text,
                 fileData: data.fileData,
@@ -674,6 +710,7 @@
     }
 
     function broadcastP2P(payload) {
+        // Envoi via WebRTC
         if (activeTarget !== 'main' && activeTarget !== 'fomo' && activeTarget !== 'talk' && !activeTarget.startsWith('custom_')) {
             if (peerConnections[activeTarget] && peerConnections[activeTarget].open) {
                 peerConnections[activeTarget].send(payload);
@@ -683,6 +720,8 @@
                 if (conn.open) conn.send(payload);
             });
         }
+        // Doublon Sécurisé via SocketIO
+        socket.emit('send_chat_message', payload);
     }
 
     document.getElementById('chatInput').addEventListener('keydown', () => {
@@ -700,24 +739,24 @@
 
     function handleTyping() {
         const myPseudo = document.getElementById('myPseudo').value.trim() || 'Anonyme';
-        broadcastP2P({ type: 'typing', pseudo: myPseudo });
+        socket.emit('typing', { pseudo: myPseudo, target: activeTarget });
     }
+
+    socket.on('user_typing', (data) => {
+        document.getElementById('typingNotice').innerText = `${data.pseudo} écrit...`;
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => { document.getElementById('typingNotice').innerText = ''; }, 2000);
+    });
 
     function sendCurrentMsg() {
         const now = Date.now();
-        if(now - lastMsgTime < 1500) {
-            alert("⚠️ ANTI-SPAM : Ralentis le rythme ! Attends une seconde.");
-            return;
-        }
+        if(now - lastMsgTime < 1000) return alert("⚠️ ANTI-SPAM : Ralentis le rythme ! Attends une seconde.");
 
         const input = document.getElementById('chatInput');
         const txt = input.value.trim();
         if(!txt) return;
 
-        if(!hasAccessToSalon(currentSalon)) {
-            alert("🔒 Votre niveau d'autorité ne vous permet pas de poster ici !");
-            return;
-        }
+        if(!hasAccessToSalon(currentSalon)) return alert("🔒 Votre niveau d'autorité ne vous permet pas de poster ici !");
 
         lastMsgTime = now;
         myXP += 1;
@@ -740,21 +779,34 @@
         updateStatsUI();
         const myName = document.getElementById('myPseudo').value.trim() || 'Anonyme';
         const hesitation = getHesitationLevel();
+        const msgId = 'msg_' + Date.now() + Math.floor(Math.random()*1000);
 
         const payload = {
             type: 'chat',
+            msgId: msgId,
             pseudo: myName,
             title: activeTitle,
             text: txt,
             sender_id: myPeerId,
+            target: activeTarget,
             hesitation: hesitation
         };
 
         broadcastP2P(payload);
-        socket.emit('send_chat_message', payload);
-        displayMsg({ sender: myName, title: activeTitle, text: txt, isLocal: true, hesitation: hesitation });
+        displayMsg({ msgId: msgId, sender: myName, title: activeTitle, text: txt, isLocal: true, hesitation: hesitation });
         input.value = '';
     }
+
+    function triggerMessageSeen() {
+        socket.emit('message_seen', { readerId: myPeerId, target: activeTarget });
+    }
+
+    socket.on('message_seen_ack', (data) => {
+        document.querySelectorAll('.msg-status.local-status').forEach(el => {
+            el.innerText = '✓✓ Vu';
+            el.classList.add('seen');
+        });
+    });
 
     function sendFomoAnnouncement() {
         const now = Date.now();
@@ -785,7 +837,6 @@
         };
 
         broadcastP2P(payload);
-        socket.emit('send_chat_message', payload);
         displayFomoCard(payload);
 
         document.getElementById('fomoTitle').value = '';
@@ -846,16 +897,25 @@
             }
         }
 
+        const statusHtml = m.isLocal ? `<span class="msg-status local-status" id="st_${m.msgId}">✓ Envoyé</span>` : '';
+
         b.innerHTML += `
-            <div class="msg-bubble ${bubbleType}">
+            <div class="msg-bubble ${bubbleType}" id="${m.msgId}">
                 <span class="msg-sender-name">
                     ${m.sender} <span class="user-title-badge">${m.title || 'Novice'}</span>
                     <small style="color:#aaa; font-size:8px;">(${m.hesitation || 'Direct'})</small>
                 </span>
                 ${contentHtml}
+                ${statusHtml}
             </div>`;
         b.scrollTop = b.scrollHeight;
     }
+
+    socket.on('chat_message', (data) => {
+        if(data.sender_id !== myPeerId) {
+            handleIncomingData(data, data.sender_id);
+        }
+    });
 
     function sendFile(elem) {
         const file = elem.files[0];
@@ -864,18 +924,22 @@
         const reader = new FileReader();
         reader.onload = function(e) {
             const myName = document.getElementById('myPseudo').value.trim() || 'Anonyme';
+            const msgId = 'msg_' + Date.now();
             const payload = {
                 type: 'chat',
+                msgId: msgId,
                 fileData: e.target.result,
                 fileName: file.name,
                 fileType: file.type,
                 pseudo: myName,
-                title: activeTitle
+                title: activeTitle,
+                sender_id: myPeerId,
+                target: activeTarget
             };
             myXP += 1;
             updateStatsUI();
             broadcastP2P(payload);
-            displayMsg({ sender: myName, title: activeTitle, fileName: file.name, fileType: file.type, fileData: e.target.result, isLocal: true });
+            displayMsg({ msgId: msgId, sender: myName, title: activeTitle, fileName: file.name, fileType: file.type, fileData: e.target.result, isLocal: true });
             elem.value = '';
         };
         reader.readAsDataURL(file);
@@ -894,11 +958,12 @@
                     const reader = new FileReader();
                     reader.onloadend = () => {
                         const myName = document.getElementById('myPseudo').value.trim() || 'Anonyme';
-                        const payload = { type: 'chat', fileData: reader.result, fileType: 'audio/webm', pseudo: myName, title: activeTitle };
+                        const msgId = 'msg_' + Date.now();
+                        const payload = { type: 'chat', msgId: msgId, fileData: reader.result, fileType: 'audio/webm', pseudo: myName, title: activeTitle, sender_id: myPeerId, target: activeTarget };
                         myXP += 1;
                         updateStatsUI();
                         broadcastP2P(payload);
-                        displayMsg({ sender: myName, title: activeTitle, fileData: reader.result, fileType: 'audio/webm', isLocal: true });
+                        displayMsg({ msgId: msgId, sender: myName, title: activeTitle, fileData: reader.result, fileType: 'audio/webm', isLocal: true });
                     };
                     reader.readAsDataURL(blob);
                 };
@@ -935,12 +1000,28 @@
 
     function syncProfile() {
         const pseudo = document.getElementById('myPseudo').value.trim() || 'Anonyme';
+        const age = document.getElementById('myAge').value || 'N/A';
+        const sexe = document.getElementById('mySexe').value;
+        const pays = document.getElementById('myPays').value;
         activeTitle = document.getElementById('myTitleSelect').value;
+
         localStorage.setItem('aoo1_pseudo', pseudo);
+        localStorage.setItem('aoo1_age', age);
+        localStorage.setItem('aoo1_sexe', sexe);
+        localStorage.setItem('aoo1_pays', pays);
         localStorage.setItem('aoo1_active_title', activeTitle);
+
         document.getElementById('avatarText').innerText = pseudo.charAt(0).toUpperCase();
 
-        socket.emit('register', { peer_id: myPeerId, pseudo: pseudo, title: activeTitle });
+        socket.emit('register', {
+            peer_id: myPeerId,
+            pseudo: pseudo,
+            title: activeTitle,
+            age: age,
+            sexe: sexe,
+            pays: pays,
+            photo: myPhoto
+        });
     }
 
     function getTitleLevel(titleName) {
@@ -993,7 +1074,6 @@
         const activeBtn = document.getElementById('btn_' + salonId);
         if(activeBtn) activeBtn.classList.add('active');
 
-        // Reset Visuel En-tête
         document.getElementById('targetAvatarHeader').style.display = 'none';
         document.getElementById('camCallBtn').style.display = 'none';
 
@@ -1019,7 +1099,6 @@
             document.getElementById('currentSalonTitle').innerText = "🔒 " + (cs ? cs.name : 'Salon Privé');
             document.getElementById('salonSub').innerText = `Autorité requise : Niveau ${cs ? cs.minLevel : 1}`;
         } else {
-            // Salon Privé P2P avec un membre
             const targetPeer = onlinePeersData[salonId];
             const peerName = targetPeer?.pseudo || salonId;
             document.getElementById('currentSalonTitle').innerText = "💬 PV Direct : " + peerName;
@@ -1033,6 +1112,35 @@
             }
         }
         document.getElementById('msgBox').innerHTML = '';
+    }
+
+    function showUserProfile(peerId) {
+        const p = onlinePeersData[peerId];
+        if(!p) return;
+
+        document.getElementById('modalUserPseudo').innerText = p.pseudo || 'Anonyme';
+        document.getElementById('modalUserTitle').innerText = p.title || 'Novice Niv.1';
+        document.getElementById('modalUserAge').innerText = p.age || 'N/A';
+        document.getElementById('modalUserSexe').innerText = p.sexe || 'N/A';
+        document.getElementById('modalUserPays').innerText = p.pays || 'N/A';
+        document.getElementById('modalUserId').innerText = p.peer_id || peerId;
+
+        if(p.photo) {
+            document.getElementById('modalUserPhoto').src = p.photo;
+        } else {
+            document.getElementById('modalUserPhoto').src = 'https://via.placeholder.com/150/1a1a2e/ff79c6?text=' + (p.pseudo ? p.pseudo.charAt(0) : '?');
+        }
+
+        document.getElementById('modalUserChatBtn').onclick = () => {
+            closeUserProfile();
+            switchSalon(p.peer_id);
+        };
+
+        document.getElementById('userProfileModal').style.display = 'block';
+    }
+
+    function closeUserProfile() {
+        document.getElementById('userProfileModal').style.display = 'none';
     }
 
     function renderShopGrid() {
@@ -1100,6 +1208,7 @@
     function updateVolume() { notifSound.volume = document.getElementById('volControl').value; }
 
     socket.on('peer_discovery', (peersList) => {
+        onlinePeersData = {};
         peersList.forEach(p => {
             if (p.peer_id !== myPeerId) {
                 onlinePeersData[p.peer_id] = p;
@@ -1114,13 +1223,15 @@
         box.innerHTML = '';
         Object.keys(onlinePeersData).forEach(id => {
             const peerInfo = onlinePeersData[id];
+            const photoSrc = peerInfo.photo || 'https://via.placeholder.com/50/1a1a2e/ff79c6?text=' + (peerInfo.pseudo ? peerInfo.pseudo.charAt(0) : '?');
+            
             box.innerHTML += `
-                <div class="user-card" onclick="switchSalon('${id}')">
+                <div class="user-card" onclick="showUserProfile('${id}')">
+                    <img src="${photoSrc}" class="user-card-img">
                     <div style="flex:1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                         <b style="font-size: 10px;">🟢 ${peerInfo.pseudo || id}</b>
                         <span style="font-size:8px; color:#bd93f9; display:block;">${peerInfo.title || 'Novice'}</span>
                     </div>
-                    <button style="font-size:8px; padding:2px 5px;">PV / Cam</button>
                 </div>`;
         });
     }
