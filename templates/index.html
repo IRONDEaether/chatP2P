@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AOO1 V1.6 — Ultra Responsive & P2P Complete Network</title>
+    <title>AOO1 V1.7 — Video Calls & Complete P2P Network</title>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
@@ -41,7 +41,6 @@
             position: relative;
         }
 
-        /* Sidebar & Navigation */
         .sidebar {
             width: 340px;
             min-width: 280px;
@@ -130,7 +129,6 @@
             font-size: 11px;
         }
 
-        /* Zone de Chat */
         .chat-container {
             flex: 1;
             display: flex;
@@ -230,7 +228,6 @@
             align-items: center;
         }
 
-        /* Fenêtre Pop-up Modale pour la Boutique & Guide */
         .modal {
             display: none;
             position: absolute;
@@ -245,6 +242,48 @@
             overflow-y: auto;
             box-shadow: 0 0 30px rgba(0,0,0,0.9);
         }
+
+        /* Interface Appel Vidéo */
+        .video-call-overlay {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10, 10, 20, 0.95);
+            z-index: 200;
+            border-radius: 16px;
+            flex-direction: column;
+            padding: 15px;
+        }
+
+        .video-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            position: relative;
+        }
+
+        .video-box {
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .video-box video { width: 100%; height: 100%; object-fit: cover; }
+        .video-box img { width: 100%; height: 100%; object-fit: cover; display: none; }
+
+        .call-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            padding-top: 10px;
+        }
+
         .shop-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -263,16 +302,6 @@
         .rec-btn.recording { animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
-        .guide-box {
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,121,198,0.2);
-            border-radius: 10px;
-            padding: 12px;
-            margin-bottom: 15px;
-            font-size: 12px;
-            line-height: 1.5;
-        }
-
         .fomo-form {
             display: flex;
             flex-direction: column;
@@ -283,21 +312,19 @@
             margin-top: 5px;
         }
 
-        /* Design Adaptatif Mobile / Écrans Réduits */
         @media (max-width: 850px) {
             .main-app { flex-direction: column; height: 100dvh; width: 100%; padding: 4px; gap: 6px; }
             .sidebar { width: 100%; height: 210px; min-width: 100%; padding: 8px; }
             .chat-container { height: calc(100% - 220px); padding: 8px; }
-            .msg-bubble { max-width: 92%; }
+            .video-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
 
 <div class="main-app">
-    <!-- Sidebar / Barre Latérale -->
+    <!-- Sidebar -->
     <div class="sidebar glass-panel">
-        <!-- Top Bar : Audio & Boutique Icon -->
         <div class="top-header-bar">
             <button onclick="playShopSound(); openShop()" style="font-size:11px;">🛍️ Boutique</button>
             <div style="display:flex; align-items:center; gap:4px;">
@@ -315,7 +342,6 @@
             <h5 id="myIdTag" style="margin-top:2px; color:#ff79c6;">ID: ------</h5>
         </div>
 
-        <!-- Dashboard Dette / XP -->
         <div class="stats-bar">
             <div>
                 <div class="stat-val" id="myXP">0</div>
@@ -327,19 +353,16 @@
             </div>
         </div>
 
-        <!-- Registre Dette -->
         <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius:8px; padding:6px; font-size:10px;">
             <b>🧾 Registre de Dette :</b>
             <div id="debtDetailsBox" style="color:#aaa; margin-top:2px; max-height:40px; overflow-y:auto;">Aucune dette active.</div>
         </div>
 
-        <!-- Profil Miroir -->
         <div style="background: rgba(255,255,255,0.03); padding:6px; border-radius:8px; font-size:10px;">
             <b>🧠 Profil Miroir :</b>
             <span id="psychProfile" style="color:#bd93f9;">Calme & Analytique</span>
         </div>
 
-        <!-- Profil Config -->
         <input type="text" id="myPseudo" placeholder="Mon Pseudo" oninput="syncProfile()">
         
         <div style="display:flex; gap:4px;">
@@ -365,15 +388,14 @@
 
         <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1);">
 
-        <!-- Liste des Contacts enregistrés & En Ligne (LocalStorage) -->
-        <h5 style="font-size:11px; color:#8be9fd;">👥 CONTACTS EN LIGNE (Cliquer pour PV)</h5>
-        <div id="peersBox" style="max-height: 100px; overflow-y: auto;"></div>
+        <h5 style="font-size:11px; color:#8be9fd;">👥 CONTACTS EN LIGNE</h5>
+        <div id="peersBox" style="max-height: 120px; overflow-y: auto;"></div>
 
         <h5 style="font-size:10px; color:#ff5555; margin-top:4px;">🚫 CONTACTS BLOQUÉS</h5>
         <div id="blockedBox" style="max-height:50px; overflow-y:auto; font-size:9px;"></div>
     </div>
 
-    <!-- Zone de Chat Principal -->
+    <!-- Zone Chat Principal -->
     <div class="chat-container glass-panel">
         <div class="salons-nav" id="salonsNavBox">
             <button class="salon-btn active" id="btn_main" onclick="switchSalon('main')">🌐 Général</button>
@@ -386,38 +408,82 @@
                 <h3 id="currentSalonTitle" style="font-size:14px;">🌐 Zone Principale</h3>
                 <small id="salonSub" style="color:rgba(255,255,255,0.6); font-size:10px;">Espace d'échange P2P global</small>
             </div>
-            <span id="typingNotice" style="font-size:10px; color:#50fa7b; font-style:italic;"></span>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <button id="callBtn" onclick="startVideoCall()" style="display:none; background:#50fa7b; color:#000; font-size:11px;">📹 Lancer Appel Vidéo</button>
+                <span id="typingNotice" style="font-size:10px; color:#50fa7b; font-style:italic;"></span>
+            </div>
         </div>
 
         <div class="messages-area" id="msgBox"></div>
 
-        <!-- Formulaire Annonce Dédié quand on est dans le salon FOMO -->
         <div id="fomoInputContainer" class="fomo-form" style="display:none;">
             <b style="color:#ff79c6; font-size:11px;">📢 NOUVELLE ANNONCE SECRÈTE (-15 XP)</b>
             <input type="text" id="fomoTitle" placeholder="Titre de l'annonce...">
-            <input type="text" id="fomoSummary" placeholder="Résumé / Aperçu public de l'annonce...">
+            <input type="text" id="fomoSummary" placeholder="Résumé / Aperçu public...">
             <textarea id="fomoSecret" placeholder="Le secret ou le contenu masqué..." rows="2"></textarea>
             <button onclick="sendFomoAnnouncement()" style="background:#50fa7b; color:#000;">Publier l'Annonce (Vérification Humaine)</button>
         </div>
 
-        <!-- Barre d'envoi standard avec Fichiers & Audio Voice -->
         <div class="input-bar" id="standardInputContainer">
             <button type="button" id="micBtn" class="rec-btn" onclick="toggleRecord()">🎤</button>
-            <label style="cursor:pointer; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); padding: 8px 10px; border-radius: 8px;" title="Envoyer Fichier / Media">
-                📎 <input type="file" id="fileAttach" style="display:none" onchange="sendFile(this)">
+            <label style="cursor:pointer; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); padding: 8px 10px; border-radius: 8px;" title="Envoyer Photo/Vidéo/Son">
+                📎 <input type="file" id="fileAttach" accept="image/*,video/*,audio/*" style="display:none" onchange="sendFile(this)">
             </label>
             <input type="text" id="chatInput" placeholder="Tapez votre message..." style="flex:1;" oninput="handleTyping()" onkeypress="if(event.key==='Enter') sendCurrentMsg()">
             <button onclick="sendCurrentMsg()">Envoyer (+1 XP)</button>
         </div>
+
+        <!-- Overlay d'Appel Vidéo P2P -->
+        <div class="video-call-overlay" id="videoCallOverlay">
+            <h4 style="text-align:center; color:#ff79c6; margin-bottom:10px;" id="callHeaderTitle">📹 Appel Vidéo P2P</h4>
+            <div class="video-grid">
+                <div class="video-box">
+                    <video id="localVideo" autoplay muted playsinline></video>
+                    <img id="localVideoFallback" src="" alt="Photo Profil">
+                    <span style="position:absolute; bottom:5px; left:5px; font-size:10px; background:rgba(0,0,0,0.6); padding:2px 5px; border-radius:4px;">Moi</span>
+                </div>
+                <div class="video-box">
+                    <video id="remoteVideo" autoplay playsinline></video>
+                    <img id="remoteVideoFallback" src="" alt="Photo Contact">
+                    <span style="position:absolute; bottom:5px; left:5px; font-size:10px; background:rgba(0,0,0,0.6); padding:2px 5px; border-radius:4px;" id="remoteVideoLabel">Pair</span>
+                </div>
+            </div>
+            <div class="call-controls">
+                <button onclick="toggleAudioTrack()" id="muteMicBtn" style="background:#bd93f9; color:#000;">🎤 Couper Micro</button>
+                <button onclick="toggleVideoTrack()" id="hideCamBtn" style="background:#8be9fd; color:#000;">📷 Masquer Cam (Mettre Photo)</button>
+                <button onclick="endCall()" style="background:#ff5555; color:#fff;">📞 Raccrocher</button>
+            </div>
+        </div>
     </div>
 
-    <!-- Modal Boutique (50 Titres & Création Salons) -->
+    <!-- Modal Inspection Profil -->
+    <div class="modal" id="profileModal" style="max-width:400px; text-align:center;">
+        <h3 style="color:#ff79c6; margin-bottom:10px;" id="profModalName">Profil Utilisateur</h3>
+        <div style="width:140px; height:140px; border-radius:50%; border:3px solid #ff79c6; margin:0 auto 10px auto; overflow:hidden; background:#222;">
+            <img id="profModalPhoto" src="" style="width:100%; height:100%; object-fit:cover; display:none;">
+            <div id="profModalInit" style="font-size:48px; line-height:140px; color:#ff79c6;">?</div>
+        </div>
+        <div style="font-size:12px; line-height:1.8; color:#eee; text-align:left; background:rgba(255,255,255,0.05); padding:10px; border-radius:8px;">
+            <p><b>🎖️ Titre d'Autorité :</b> <span id="profModalTitle" style="color:#bd93f9;">-</span></p>
+            <p><b>👤 Sexe :</b> <span id="profModalSexe">-</span></p>
+            <p><b>🎂 Âge :</b> <span id="profModalAge">-</span></p>
+            <p><b>🌍 Pays :</b> <span id="profModalPays">-</span></p>
+            <p><b>🆔 ID Réseau :</b> <span id="profModalId" style="color:#50fa7b;">-</span></p>
+        </div>
+        <br>
+        <div style="display:flex; gap:8px;">
+            <button onclick="startPrivateChatFromModal()" style="flex:1;">💬 Démarrer Tchat PV</button>
+            <button onclick="closeProfileModal()" style="background:#ff5555; color:#fff;">Fermer</button>
+        </div>
+    </div>
+
+    <!-- Modal Boutique -->
     <div class="modal" id="shopModal">
         <div style="display:flex; justify-content:space-between; align-items:center;">
             <h3 style="color:#ff79c6;">🛍️ Boutique des 50 Titres & Salons</h3>
             <button onclick="closeShop()" style="background:#ff5555; color:#fff; padding:2px 8px;">X</button>
         </div>
-        <p style="font-size:11px; margin-top:4px;">Montez les échelons d'autorité (Niveau 1 à 50) pour débloquer le réseau.</p>
+        <p style="font-size:11px; margin-top:4px;">Montez les échelons d'autorité pour débloquer le réseau.</p>
         
         <div class="shop-card" style="border: 1px solid #ff79c6; margin-top:10px;">
             <h4 style="color:#ff79c6;">➕ Créer un Salon Privé</h4>
@@ -439,17 +505,7 @@
             <button onclick="closeGuide()" style="background:#ff5555; color:#fff; padding:2px 8px;">X</button>
         </div>
         <br>
-        <div class="guide-box">
-            <h4 style="color:#ff79c6;">1. 💎 Hiérarchie et 50 Titres</h4>
-            <p>• Les titres s'échelonnent du <b>Niveau 1 au Niveau 50</b>.</p>
-            <p>• Débloquez des titres plus élevés pour accéder aux salons privés restreints.</p>
-        </div>
-
-        <div class="guide-box">
-            <h4 style="color:#ff79c6;">2. 📢 Annonces FOMO & Protection Anti-Spam</h4>
-            <p>• Publier une annonce masquée coûte <b>15 XP</b>.</p>
-            <p>• <b>Anti-Spam & Vérification Humaine :</b> Une question s'affiche avant chaque envoi sensible.</p>
-        </div>
+        <p style="font-size:12px; line-height:1.6;">Utilisez les fonctionnalités P2P, envoyez des photos/vidéos, passez des appels vidéo WebRTC et accumulez des XP pour débloquer des titres !</p>
     </div>
 </div>
 
@@ -458,7 +514,6 @@
     let myPeerId = localStorage.getItem('aoo1_id') || Math.floor(10000000 + Math.random() * 90000000).toString();
     localStorage.setItem('aoo1_id', myPeerId);
 
-    // 50 TITRES D'AUTORITÉ
     const ALL_TITLES = Array.from({ length: 50 }, (_, i) => {
         const lvl = i + 1;
         const names = [
@@ -473,11 +528,7 @@
             "Fondateur", "Imperator", "Oméga", "Alpha", "Suprême",
             "Monolithe", "Absolu", "Dieu du Réseau", "Entité Suprême", "Monarque Absolu"
         ];
-        return {
-            name: `${names[i]} Niv.${lvl}`,
-            level: lvl,
-            price: lvl === 1 ? 0 : Math.floor(15 * Math.pow(1.18, lvl))
-        };
+        return { name: `${names[i]} Niv.${lvl}`, level: lvl, price: lvl === 1 ? 0 : Math.floor(15 * Math.pow(1.18, lvl)) };
     });
 
     let myXP = parseInt(localStorage.getItem('aoo1_xp') || '50');
@@ -485,18 +536,23 @@
     let debtRegistry = JSON.parse(localStorage.getItem('aoo1_debt_registry') || '{}');
     let blockedUsers = JSON.parse(localStorage.getItem('aoo1_blocked') || '[]');
     let myPhoto = localStorage.getItem('aoo1_photo') || '';
-    let currentSalon = 'main';
-    let activeTarget = 'main';
-    let lastMsgTime = 0;
+    let currentSalon = 'main', activeTarget = 'main', lastMsgTime = 0;
 
     let myTitles = JSON.parse(localStorage.getItem('aoo1_titles') || '["Novice Niv.1"]');
     let activeTitle = localStorage.getItem('aoo1_active_title') || 'Novice Niv.1';
     let customSalons = JSON.parse(localStorage.getItem('aoo1_custom_salons') || '[]');
 
     let peerConnections = {};
-    let onlinePeersData = {};
+    let onlinePeersFullData = {};
     let isRecording = false, mediaRecorder, audioChunks = [];
     let typingTimeout, typingStart = 0;
+    let selectedPeerForModal = null;
+
+    // WebRTC Video Call State
+    let localStream = null;
+    let activeCall = null;
+    let isAudioMuted = false;
+    let isVideoHidden = false;
 
     const notifSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
     const shopSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3');
@@ -516,10 +572,24 @@
 
     if(localStorage.getItem('aoo1_pseudo')) document.getElementById('myPseudo').value = localStorage.getItem('aoo1_pseudo');
 
-    // WEBRTC INIT
+    // WEBRTC PEER INITIALIZATION
     const peer = new Peer(myPeerId);
     peer.on('open', () => syncProfile());
     peer.on('connection', (conn) => registerConnection(conn));
+    
+    // Réception Appel Vidéo Entrant
+    peer.on('call', async (call) => {
+        if(confirm(`📹 Appel vidéo entrant de ${onlinePeersFullData[call.peer]?.pseudo || call.peer} ! Accepter ?`)) {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                document.getElementById('localVideo').srcObject = localStream;
+                call.answer(localStream);
+                setupCallEvents(call);
+            } catch(e) {
+                alert("Impossible d'accéder à la caméra/micro !");
+            }
+        }
+    });
 
     function registerConnection(conn) {
         if(blockedUsers.includes(conn.peer)) return;
@@ -537,7 +607,7 @@
     function verifyHumanity() {
         const n1 = Math.floor(Math.random() * 9) + 1;
         const n2 = Math.floor(Math.random() * 9) + 1;
-        const ans = prompt(`🛡️ VÉRIFICATION HUMAINE (Anti-Spam) :\nCombien font ${n1} + ${n2} ?`);
+        const ans = prompt(`🛡️ VÉRIFICATION HUMAINE :\nCombien font ${n1} + ${n2} ?`);
         return parseInt(ans) === (n1 + n2);
     }
 
@@ -590,27 +660,9 @@
         }
     }
 
-    document.getElementById('chatInput').addEventListener('keydown', () => {
-        if(!typingStart) typingStart = Date.now();
-    });
-
-    function getHesitationLevel() {
-        if(!typingStart) return "Direct ⚡";
-        let duration = (Date.now() - typingStart) / 1000;
-        typingStart = 0;
-        if(duration > 5) return "Très Hésitant 😰";
-        if(duration > 2) return "Calculateur 🤔";
-        return "Impulsif ⚡";
-    }
-
-    function handleTyping() {
-        const myPseudo = document.getElementById('myPseudo').value.trim() || 'Anonyme';
-        broadcastP2P({ type: 'typing', pseudo: myPseudo });
-    }
-
     function sendCurrentMsg() {
         const now = Date.now();
-        if(now - lastMsgTime < 1500) return alert("⚠️ ANTI-SPAM : Attends une seconde.");
+        if(now - lastMsgTime < 1000) return alert("⚠️ ANTI-SPAM : Patientez 1 sec.");
 
         const input = document.getElementById('chatInput');
         const txt = input.value.trim();
@@ -620,99 +672,15 @@
 
         lastMsgTime = now;
         myXP += 1;
-
-        if(currentSalon === 'talk' && myDebt > 0) {
-            let creditors = Object.keys(debtRegistry);
-            if(creditors.length > 0) {
-                let targetCreditor = creditors[0];
-                let payAmt = Math.min(5, debtRegistry[targetCreditor]);
-                debtRegistry[targetCreditor] -= payAmt;
-                myDebt -= payAmt;
-                if(debtRegistry[targetCreditor] <= 0) delete debtRegistry[targetCreditor];
-
-                if(peerConnections[targetCreditor] && peerConnections[targetCreditor].open) {
-                    peerConnections[targetCreditor].send({ type: 'pay_debt_step', amount: payAmt });
-                }
-            }
-        }
-
         updateStatsUI();
-        const myName = document.getElementById('myPseudo').value.trim() || 'Anonyme';
-        const hesitation = getHesitationLevel();
 
-        const payload = {
-            type: 'chat', pseudo: myName, title: activeTitle, text: txt, sender_id: myPeerId, hesitation: hesitation
-        };
+        const myName = document.getElementById('myPseudo').value.trim() || 'Anonyme';
+        const payload = { type: 'chat', pseudo: myName, title: activeTitle, text: txt, sender_id: myPeerId };
 
         broadcastP2P(payload);
         socket.emit('send_chat_message', payload);
-        displayMsg({ sender: myName, title: activeTitle, text: txt, isLocal: true, hesitation: hesitation });
+        displayMsg({ sender: myName, title: activeTitle, text: txt, isLocal: true });
         input.value = '';
-    }
-
-    function sendFomoAnnouncement() {
-        const now = Date.now();
-        if(now - lastMsgTime < 3000) return alert("⚠️ ANTI-SPAM : Patientez.");
-
-        const title = document.getElementById('fomoTitle').value.trim();
-        const summary = document.getElementById('fomoSummary').value.trim();
-        const secret = document.getElementById('fomoSecret').value.trim();
-
-        if(!title || !summary || !secret) return alert("Remplissez tous les champs !");
-        if(myXP < 15) return alert("Il vous faut au moins 15 XP !");
-        if(!verifyHumanity()) return alert("❌ Vérification humaine échouée !");
-
-        lastMsgTime = now;
-        myXP -= 15;
-        updateStatsUI();
-
-        const myName = document.getElementById('myPseudo').value.trim() || 'Anonyme';
-        const payload = {
-            type: 'fomo_announcement', pseudo: myName, title: activeTitle, announcementTitle: title, summary: summary, secret: secret, sender_id: myPeerId
-        };
-
-        broadcastP2P(payload);
-        socket.emit('send_chat_message', payload);
-        displayFomoCard(payload);
-
-        document.getElementById('fomoTitle').value = '';
-        document.getElementById('fomoSummary').value = '';
-        document.getElementById('fomoSecret').value = '';
-    }
-
-    function displayFomoCard(d) {
-        const b = document.getElementById('msgBox');
-        const cardId = 'fomo_' + Date.now() + Math.floor(Math.random()*100);
-        
-        b.innerHTML += `
-            <div class="fomo-locked-box" id="${cardId}">
-                <div style="font-size:10px; color:#ff79c6; font-weight:bold;">📢 ANNONCE PAR : ${d.pseudo} (${d.title || 'Novice'})</div>
-                <h3 style="color:#50fa7b; margin:4px 0;">${d.announcementTitle}</h3>
-                <p style="font-size:12px; color:#eee; margin-bottom:6px;"><b>Aperçu :</b> ${d.summary}</p>
-                <div style="font-size:10px; color:#aaa; margin-bottom:8px;">Coût de déverrouillage : 15 XP de Dette</div>
-                <button onclick="unlockFomo('${cardId}', '${encodeURIComponent(d.secret)}', '${d.sender_id}')">🔓 Révéler l'Info Secrète (+15 Dette)</button>
-            </div>`;
-        b.scrollTop = b.scrollHeight;
-    }
-
-    function unlockFomo(cardId, encodedSecret, authorId) {
-        const secretText = decodeURIComponent(encodedSecret);
-        if(authorId === myPeerId) {
-            document.getElementById(cardId).innerHTML += `<div style="background:rgba(0,0,0,0.4); padding:8px; border-radius:6px; margin-top:6px; color:#50fa7b;"><b>CONTENU SECRET :</b><br>${secretText}</div>`;
-            return;
-        }
-
-        if(!verifyHumanity()) return alert("❌ Vérification humaine échouée !");
-
-        myDebt += 15;
-        debtRegistry[authorId] = (debtRegistry[authorId] || 0) + 15;
-        updateStatsUI();
-        
-        if (peerConnections[authorId] && peerConnections[authorId].open) {
-            peerConnections[authorId].send({ type: 'debt_transfer', amount: 15 });
-        }
-
-        document.getElementById(cardId).innerHTML += `<div style="background:rgba(0,0,0,0.4); padding:8px; border-radius:6px; margin-top:6px; color:#50fa7b;"><b>CONTENU SECRET :</b><br>${secretText}</div>`;
     }
 
     function displayMsg(m) {
@@ -724,6 +692,8 @@
         if(m.fileData) {
             if(m.fileType && m.fileType.startsWith('image/')) {
                 contentHtml += `<img src="${m.fileData}" class="media-preview">`;
+            } else if(m.fileType && m.fileType.startsWith('video/')) {
+                contentHtml += `<video controls src="${m.fileData}" class="media-preview"></video>`;
             } else if(m.fileType && m.fileType.startsWith('audio/')) {
                 contentHtml += `<audio controls src="${m.fileData}" style="width:100%; height:32px; margin-top:4px;"></audio>`;
             } else {
@@ -735,7 +705,6 @@
             <div class="msg-bubble ${bubbleType}">
                 <span class="msg-sender-name">
                     ${m.sender} <span class="user-title-badge">${m.title || 'Novice'}</span>
-                    <small style="color:#aaa; font-size:8px;">(${m.hesitation || 'Direct'})</small>
                 </span>
                 ${contentHtml}
             </div>`;
@@ -759,36 +728,177 @@
         reader.readAsDataURL(file);
     }
 
-    async function toggleRecord() {
-        const btn = document.getElementById('micBtn');
-        if (!isRecording) {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream);
-                audioChunks = [];
-                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-                mediaRecorder.onstop = () => {
-                    const blob = new Blob(audioChunks, { type: 'audio/webm' });
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                        const myName = document.getElementById('myPseudo').value.trim() || 'Anonyme';
-                        const payload = { type: 'chat', fileData: reader.result, fileType: 'audio/webm', pseudo: myName, title: activeTitle };
-                        myXP += 1;
-                        updateStatsUI();
-                        broadcastP2P(payload);
-                        displayMsg({ sender: myName, title: activeTitle, fileData: reader.result, fileType: 'audio/webm', isLocal: true });
-                    };
-                    reader.readAsDataURL(blob);
-                };
-                mediaRecorder.start();
-                isRecording = true;
-                btn.classList.add('recording');
-            } catch (err) { alert("Accès micro refusé !"); }
-        } else {
-            mediaRecorder.stop();
-            isRecording = false;
-            btn.classList.remove('recording');
+    // FONCTIONNALITÉ APPEL VIDÉO WEBRTC
+    async function startVideoCall() {
+        if(activeTarget === 'main' || activeTarget === 'fomo' || activeTarget === 'talk' || activeTarget.startsWith('custom_')) {
+            return alert("Sélectionnez un contact privé en ligne pour l'appeler !");
         }
+
+        try {
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            document.getElementById('localVideo').srcObject = localStream;
+            
+            const call = peer.call(activeTarget, localStream);
+            setupCallEvents(call);
+        } catch(e) {
+            alert("Erreur d'accès à la caméra/micro !");
+        }
+    }
+
+    function setupCallEvents(call) {
+        activeCall = call;
+        document.getElementById('videoCallOverlay').style.display = 'flex';
+        const targetData = onlinePeersFullData[call.peer];
+        document.getElementById('remoteVideoLabel').innerText = targetData?.pseudo || 'Contact';
+
+        call.on('stream', (remoteStream) => {
+            document.getElementById('remoteVideo').srcObject = remoteStream;
+        });
+
+        call.on('close', () => endCall());
+    }
+
+    function toggleAudioTrack() {
+        if(localStream) {
+            isAudioMuted = !isAudioMuted;
+            localStream.getAudioTracks().forEach(t => t.enabled = !isAudioMuted);
+            document.getElementById('muteMicBtn').innerText = isAudioMuted ? "🎤 Activer Micro" : "🎤 Couper Micro";
+        }
+    }
+
+    function toggleVideoTrack() {
+        if(localStream) {
+            isVideoHidden = !isVideoHidden;
+            localStream.getVideoTracks().forEach(t => t.enabled = !isVideoHidden);
+            
+            const localVid = document.getElementById('localVideo');
+            const localImg = document.getElementById('localVideoFallback');
+            
+            if(isVideoHidden) {
+                localVid.style.display = 'none';
+                localImg.src = myPhoto || 'https://via.placeholder.com/150';
+                localImg.style.display = 'block';
+                document.getElementById('hideCamBtn').innerText = "📷 Activer Caméra";
+            } else {
+                localVid.style.display = 'block';
+                localImg.style.display = 'none';
+                document.getElementById('hideCamBtn').innerText = "📷 Masquer Cam (Mettre Photo)";
+            }
+        }
+    }
+
+    function endCall() {
+        if(activeCall) activeCall.close();
+        if(localStream) {
+            localStream.getTracks().forEach(t => t.stop());
+        }
+        document.getElementById('videoCallOverlay').style.display = 'none';
+        activeCall = null;
+        localStream = null;
+    }
+
+    // MODAL INSPECTION DE PROFIL
+    function openProfileModal(peerId) {
+        const u = onlinePeersFullData[peerId];
+        if(!u) return;
+
+        selectedPeerForModal = peerId;
+        document.getElementById('profModalName').innerText = u.pseudo;
+        document.getElementById('profModalTitle').innerText = u.title || 'Novice Niv.1';
+        document.getElementById('profModalSexe').innerText = u.sexe || 'Non spécifié';
+        document.getElementById('profModalAge').innerText = u.age ? `${u.age} ans` : 'Non spécifié';
+        document.getElementById('profModalPays').innerText = u.pays || 'Non spécifié';
+        document.getElementById('profModalId').innerText = peerId;
+
+        const imgEl = document.getElementById('profModalPhoto');
+        const initEl = document.getElementById('profModalInit');
+
+        if(u.photo) {
+            imgEl.src = u.photo;
+            imgEl.style.display = 'block';
+            initEl.style.display = 'none';
+        } else {
+            imgEl.style.display = 'none';
+            initEl.innerText = u.pseudo.charAt(0).toUpperCase();
+            initEl.style.display = 'block';
+        }
+
+        document.getElementById('profileModal').style.display = 'block';
+    }
+
+    function startPrivateChatFromModal() {
+        if(selectedPeerForModal) {
+            closeProfileModal();
+            switchSalon(selectedPeerForModal);
+        }
+    }
+
+    function closeProfileModal() { document.getElementById('profileModal').style.display = 'none'; }
+
+    function syncProfile() {
+        const pseudo = document.getElementById('myPseudo').value.trim() || 'Anonyme';
+        const age = document.getElementById('myAge').value;
+        const sexe = document.getElementById('mySexe').value;
+        const pays = document.getElementById('myPays').value;
+        activeTitle = document.getElementById('myTitleSelect').value;
+
+        localStorage.setItem('aoo1_pseudo', pseudo);
+        localStorage.setItem('aoo1_active_title', activeTitle);
+        document.getElementById('avatarText').innerText = pseudo.charAt(0).toUpperCase();
+
+        socket.emit('register', {
+            peer_id: myPeerId, pseudo: pseudo, title: activeTitle, age: age, sexe: sexe, pays: pays, photo: myPhoto
+        });
+    }
+
+    function renderPeersList() {
+        const box = document.getElementById('peersBox');
+        box.innerHTML = '';
+        Object.keys(onlinePeersFullData).forEach(id => {
+            if(!blockedUsers.includes(id)) {
+                const u = onlinePeersFullData[id];
+                box.innerHTML += `
+                    <div class="user-card">
+                        <span onclick="openProfileModal('${id}')" style="cursor:pointer; font-weight:bold; color:#50fa7b;">🟢 ${u.pseudo}</span>
+                        <button onclick="blockUser('${id}')" style="font-size:8px; background:#ff5555; padding:2px 4px;">Bloquer</button>
+                    </div>`;
+            }
+        });
+        renderBlockedList();
+    }
+
+    socket.on('peer_discovery', (peersList) => {
+        onlinePeersFullData = {};
+        peersList.forEach(p => {
+            if (p.peer_id !== myPeerId && !blockedUsers.includes(p.peer_id)) {
+                onlinePeersFullData[p.peer_id] = p;
+                connectToPeer(p.peer_id);
+            }
+        });
+        renderPeersList();
+    });
+
+    function switchSalon(salonId) {
+        currentSalon = salonId;
+        activeTarget = salonId;
+        document.querySelectorAll('.salon-btn').forEach(b => b.classList.remove('active'));
+        
+        const isPrivate = !['main', 'fomo', 'talk'].includes(salonId) && !salonId.startsWith('custom_');
+        document.getElementById('callBtn').style.display = isPrivate ? 'block' : 'none';
+
+        if(isPrivate) {
+            const u = onlinePeersFullData[salonId];
+            document.getElementById('currentSalonTitle').innerText = "💬 PV Direct avec " + (u ? u.pseudo : salonId);
+            document.getElementById('salonSub').innerText = "Canal P2P Privé (Cliquez sur le bouton pour appeler)";
+        } else if(salonId === 'main') {
+            document.getElementById('currentSalonTitle').innerText = "🌐 Zone Principale";
+            document.getElementById('salonSub').innerText = "Espace libre d'échange";
+        } else if(salonId === 'fomo') {
+            document.getElementById('currentSalonTitle').innerText = "📢 Zone Annonces (FOMO)";
+        } else if(salonId === 'talk') {
+            document.getElementById('currentSalonTitle').innerText = "💬 Discussion & Remboursement";
+        }
+        document.getElementById('msgBox').innerHTML = '';
     }
 
     function updateStatsUI() {
@@ -796,107 +906,6 @@
         document.getElementById('myDebt').innerText = myDebt;
         localStorage.setItem('aoo1_xp', myXP);
         localStorage.setItem('aoo1_debt', myDebt);
-        localStorage.setItem('aoo1_debt_registry', JSON.stringify(debtRegistry));
-
-        const debtBox = document.getElementById('debtDetailsBox');
-        if(myDebt <= 0) {
-            debtBox.innerText = "Aucune dette active.";
-        } else {
-            let details = '';
-            for(let id in debtRegistry) {
-                let name = onlinePeersData[id] || id;
-                details += `• ${debtRegistry[id]} XP dûs à ${name}<br>`;
-            }
-            debtBox.innerHTML = details || `${myDebt} XP dûs en tout.`;
-        }
-    }
-
-    function syncProfile() {
-        const pseudo = document.getElementById('myPseudo').value.trim() || 'Anonyme';
-        activeTitle = document.getElementById('myTitleSelect').value;
-        localStorage.setItem('aoo1_pseudo', pseudo);
-        localStorage.setItem('aoo1_active_title', activeTitle);
-        document.getElementById('avatarText').innerText = pseudo.charAt(0).toUpperCase();
-
-        socket.emit('register', { peer_id: myPeerId, pseudo: pseudo, title: activeTitle });
-    }
-
-    function getTitleLevel(titleName) {
-        const found = ALL_TITLES.find(t => t.name === titleName);
-        return found ? found.level : 1;
-    }
-
-    function hasAccessToSalon(salonId) {
-        if(salonId === 'main' || salonId === 'fomo' || salonId === 'talk') return true;
-        const targetSalon = customSalons.find(s => s.id === salonId);
-        if(!targetSalon) return true;
-        return getTitleLevel(activeTitle) >= (targetSalon.minLevel || 1);
-    }
-
-    function createCustomSalon() {
-        const name = document.getElementById('newSalonName').value.trim();
-        const minLevel = parseInt(document.getElementById('newSalonMinLevel').value || '1');
-
-        if(!name) return alert("Nom invalide !");
-        if(myXP < 30) return alert("XP insuffisants (30 XP requis) !");
-
-        myXP -= 30;
-        updateStatsUI();
-
-        const salonObj = { id: 'custom_' + Date.now(), name: name, minLevel: minLevel };
-        customSalons.push(salonObj);
-        localStorage.setItem('aoo1_custom_salons', JSON.stringify(customSalons));
-
-        renderSalonsNav();
-        closeShop();
-        switchSalon(salonObj.id);
-    }
-
-    function renderSalonsNav() {
-        const box = document.getElementById('salonsNavBox');
-        box.innerHTML = `
-            <button class="salon-btn ${activeTarget==='main'?'active':''}" id="btn_main" onclick="switchSalon('main')">🌐 Général</button>
-            <button class="salon-btn ${activeTarget==='fomo'?'active':''}" id="btn_fomo" onclick="switchSalon('fomo')">📢 FOMO</button>
-            <button class="salon-btn ${activeTarget==='talk'?'active':''}" id="btn_talk" onclick="switchSalon('talk')">💬 Discussion</button>
-        `;
-        customSalons.forEach(s => {
-            box.innerHTML += `<button class="salon-btn ${activeTarget===s.id?'active':''}" id="btn_${s.id}" onclick="switchSalon('${s.id}')">🔒 ${s.name} (Niv.${s.minLevel})</button>`;
-        });
-    }
-
-    function switchSalon(salonId) {
-        currentSalon = salonId;
-        activeTarget = salonId;
-        document.querySelectorAll('.salon-btn').forEach(b => b.classList.remove('active'));
-        const activeBtn = document.getElementById('btn_' + salonId);
-        if(activeBtn) activeBtn.classList.add('active');
-
-        if(salonId === 'fomo') {
-            document.getElementById('fomoInputContainer').style.display = 'flex';
-            document.getElementById('standardInputContainer').style.display = 'none';
-        } else {
-            document.getElementById('fomoInputContainer').style.display = 'none';
-            document.getElementById('standardInputContainer').style.display = 'flex';
-        }
-
-        if(salonId === 'main') {
-            document.getElementById('currentSalonTitle').innerText = "🌐 Zone Principale";
-            document.getElementById('salonSub').innerText = "Espace libre d'échange";
-        } else if(salonId === 'fomo') {
-            document.getElementById('currentSalonTitle').innerText = "📢 Zone Annonces (FOMO)";
-            document.getElementById('salonSub').innerText = "Annonces masquées (-15 XP pour poster, +15 Dette pour lire)";
-        } else if(salonId === 'talk') {
-            document.getElementById('currentSalonTitle').innerText = "💬 Discussion & Remboursement";
-            document.getElementById('salonSub').innerText = "Chaque message rembourse 5 XP de votre dette aux pairs !";
-        } else if(salonId.startsWith('custom_')) {
-            const cs = customSalons.find(s => s.id === salonId);
-            document.getElementById('currentSalonTitle').innerText = "🔒 " + (cs ? cs.name : 'Salon Privé');
-            document.getElementById('salonSub').innerText = `Autorité requise : Niveau ${cs ? cs.minLevel : 1}`;
-        } else {
-            document.getElementById('currentSalonTitle').innerText = "💬 PV Direct avec " + (onlinePeersData[salonId] || salonId);
-            document.getElementById('salonSub').innerText = "Canal P2P Privé";
-        }
-        document.getElementById('msgBox').innerHTML = '';
     }
 
     function renderShopGrid() {
@@ -907,68 +916,47 @@
             grid.innerHTML += `
                 <div class="shop-card" style="${owned ? 'border: 1px solid #50fa7b;' : ''}">
                     <h4>${t.name}</h4>
-                    <p style="font-size:10px; color:#aaa; margin:4px 0;">Autorité : Niv.${t.level}</p>
-                    <p style="font-size:11px; color:#ff79c6; margin-bottom:6px;">${t.price === 0 ? 'GRATUIT' : t.price + ' XP'}</p>
-                    <button onclick="buyTitle('${t.name}', ${t.price})" ${owned ? 'disabled style="opacity:0.5; background:#50fa7b;"' : ''}>
-                        ${owned ? 'Possédé' : 'Acheter'}
-                    </button>
+                    <p style="font-size:10px; color:#aaa; margin:4px 0;">Niv.${t.level}</p>
+                    <button onclick="buyTitle('${t.name}', ${t.price})" ${owned ? 'disabled style="opacity:0.5;"' : ''}>${owned ? 'Possédé' : t.price + ' XP'}</button>
                 </div>`;
         });
     }
 
-    function buyTitle(titleName, price) {
-        if(myTitles.includes(titleName)) return alert("Titre déjà possédé !");
-        if(myXP < price) return alert("Points XP insuffisants !");
-
-        myXP -= price;
-        myTitles.push(titleName);
+    function buyTitle(name, price) {
+        if(myXP < price) return alert("XP insuffisants !");
+        myXP -= price; myTitles.push(name);
         localStorage.setItem('aoo1_titles', JSON.stringify(myTitles));
-        updateStatsUI();
-        renderTitlesDropdown();
-        renderShopGrid();
-        syncProfile();
-        alert(`🎉 Félicitations ! Tu as débloqué le titre d'autorité "${titleName}" !`);
+        updateStatsUI(); renderTitlesDropdown(); renderShopGrid(); syncProfile();
     }
 
     function renderTitlesDropdown() {
         const sel = document.getElementById('myTitleSelect');
         sel.innerHTML = '';
-        myTitles.forEach(t => {
-            sel.innerHTML += `<option value="${t}" ${t === activeTitle ? 'selected' : ''}>Titre: ${t}</option>`;
-        });
+        myTitles.forEach(t => sel.innerHTML += `<option value="${t}">${t}</option>`);
     }
 
-    // Gestion Bloquer et LocalStorage Contacts
-    function blockUser(peerId) {
-        if(!blockedUsers.includes(peerId)) {
-            blockedUsers.push(peerId);
-            localStorage.setItem('aoo1_blocked', JSON.stringify(blockedUsers));
-            syncProfile();
-        }
+    function renderSalonsNav() {
+        const box = document.getElementById('salonsNavBox');
+        box.innerHTML = `
+            <button class="salon-btn active" id="btn_main" onclick="switchSalon('main')">🌐 Général</button>
+            <button class="salon-btn" id="btn_fomo" onclick="switchSalon('fomo')">📢 FOMO</button>
+            <button class="salon-btn" id="btn_talk" onclick="switchSalon('talk')">💬 Discussion</button>`;
     }
 
-    function unblockUser(peerId) {
-        blockedUsers = blockedUsers.filter(id => id !== peerId);
-        localStorage.setItem('aoo1_blocked', JSON.stringify(blockedUsers));
-        syncProfile();
-    }
-
-    function renderBlockedList() {
-        const box = document.getElementById('blockedBox');
-        box.innerHTML = '';
-        blockedUsers.forEach(id => {
-            box.innerHTML += `<div style="display:flex; justify-content:space-between; margin-top:2px; background:rgba(0,0,0,0.2); padding:2px 4px; border-radius:4px;">
-                <span>ID: ${id.substring(0,6)}...</span>
-                <button onclick="unblockUser('${id}')" style="font-size:8px; background:#50fa7b; padding:1px 4px;">Débloquer</button>
-            </div>`;
-        });
-    }
-
-    function playShopSound() { shopSound.play().catch(()=>{}); }
     function openShop() { document.getElementById('shopModal').style.display = 'block'; }
     function closeShop() { document.getElementById('shopModal').style.display = 'none'; }
     function openGuide() { document.getElementById('guideModal').style.display = 'block'; }
     function closeGuide() { document.getElementById('guideModal').style.display = 'none'; }
+    function playShopSound() { shopSound.play().catch(()=>{}); }
+    function updateVolume() { const v = document.getElementById('volControl').value; notifSound.volume = v; shopSound.volume = v; }
+    function blockUser(id) { blockedUsers.push(id); localStorage.setItem('aoo1_blocked', JSON.stringify(blockedUsers)); syncProfile(); }
+    function unblockUser(id) { blockedUsers = blockedUsers.filter(i => i !== id); localStorage.setItem('aoo1_blocked', JSON.stringify(blockedUsers)); syncProfile(); }
+    function renderBlockedList() {
+        const box = document.getElementById('blockedBox'); box.innerHTML = '';
+        blockedUsers.forEach(id => {
+            box.innerHTML += `<div style="display:flex; justify-content:space-between; margin-top:2px;"><span>ID: ${id.substring(0,6)}...</span><button onclick="unblockUser('${id}')" style="font-size:8px;">Débloquer</button></div>`;
+        });
+    }
 
     function loadPhoto(elem) {
         const file = elem.files[0];
@@ -985,38 +973,34 @@
         reader.readAsDataURL(file);
     }
 
-    function updateVolume() { 
-        const v = document.getElementById('volControl').value;
-        notifSound.volume = v;
-        shopSound.volume = v;
+    async function toggleRecord() {
+        const btn = document.getElementById('micBtn');
+        if (!isRecording) {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const myName = document.getElementById('myPseudo').value.trim() || 'Anonyme';
+                        const payload = { type: 'chat', fileData: reader.result, fileType: 'audio/webm', pseudo: myName, title: activeTitle };
+                        myXP += 1; updateStatsUI(); broadcastP2P(payload);
+                        displayMsg({ sender: myName, title: activeTitle, fileData: reader.result, fileType: 'audio/webm', isLocal: true });
+                    };
+                    reader.readAsDataURL(blob);
+                };
+                mediaRecorder.start(); isRecording = true; btn.classList.add('recording');
+            } catch (err) { alert("Accès micro refusé !"); }
+        } else {
+            mediaRecorder.stop(); isRecording = false; btn.classList.remove('recording');
+        }
     }
 
-    socket.on('peer_discovery', (peersList) => {
-        peersList.forEach(p => {
-            if (p.peer_id !== myPeerId && !blockedUsers.includes(p.peer_id)) {
-                onlinePeersData[p.peer_id] = p.pseudo;
-                connectToPeer(p.peer_id);
-            }
-        });
-        renderPeersList();
-    });
-
-    function renderPeersList() {
-        const box = document.getElementById('peersBox');
-        box.innerHTML = '';
-        Object.keys(onlinePeersData).forEach(id => {
-            if(!blockedUsers.includes(id)) {
-                box.innerHTML += `
-                    <div class="user-card">
-                        <span onclick="switchSalon('${id}')" style="cursor:pointer; font-weight:bold; color:#50fa7b;">🟢 ${onlinePeersData[id]}</span>
-                        <button onclick="blockUser('${id}')" style="font-size:8px; background:#ff5555; padding:2px 4px;">Bloquer</button>
-                    </div>`;
-            }
-        });
-        renderBlockedList();
-    }
-
-    socket.on('connect', () => { syncProfile(); });
+    function hasAccessToSalon() { return true; }
+    function handleTyping() { broadcastP2P({ type: 'typing', pseudo: document.getElementById('myPseudo').value }); }
 </script>
 
 </body>
