@@ -1,7 +1,7 @@
 import os
 import secrets
 from flask import Flask, render_template, request
-from flask_socketio import SocketIO, emit, join_room, leave_room
+from flask_socketio import SocketIO, emit
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
@@ -20,10 +20,9 @@ socketio = SocketIO(
     cors_allowed_origins="*",
     ping_timeout=10,
     ping_interval=5,
-    max_http_buffer_size=1e6
+    max_http_buffer_size=10e6  # Ajusté à 10MB pour les gros transferts vidéo/médias
 )
 
-# Stockage mémoire des profils connectés
 connected_users = {}
 
 @app.route('/')
@@ -37,14 +36,15 @@ def handle_connect():
 @socketio.on('register')
 def handle_register(data):
     peer_id = data.get('peer_id')
-    pseudo = data.get('pseudo', 'Anonyme')
-    title = data.get('title', 'Novice Niv.1')
-    
     if peer_id:
         connected_users[request.sid] = {
             'peer_id': peer_id,
-            'pseudo': pseudo,
-            'title': title
+            'pseudo': data.get('pseudo', 'Anonyme'),
+            'title': data.get('title', 'Novice Niv.1'),
+            'age': data.get('age', 'N/A'),
+            'sexe': data.get('sexe', 'N/A'),
+            'pays': data.get('pays', 'N/A'),
+            'photo': data.get('photo', '')
         }
         emit('peer_discovery', list(connected_users.values()), broadcast=True)
 
