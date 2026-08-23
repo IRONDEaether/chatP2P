@@ -23,7 +23,7 @@ socketio = SocketIO(
     max_http_buffer_size=1e6
 )
 
-# Stockage des profils connectés { socket_id: { peer_id, pseudo, title } }
+# Stockage mémoire des profils connectés
 connected_users = {}
 
 @app.route('/')
@@ -36,7 +36,6 @@ def handle_connect():
 
 @socketio.on('register')
 def handle_register(data):
-    """ Enregistre le pair et informe tous les autres utilisateurs """
     peer_id = data.get('peer_id')
     pseudo = data.get('pseudo', 'Anonyme')
     title = data.get('title', 'Novice Niv.1')
@@ -47,12 +46,10 @@ def handle_register(data):
             'pseudo': pseudo,
             'title': title
         }
-        # Diffuse la liste globale mise à jour des pairs en ligne
         emit('peer_discovery', list(connected_users.values()), broadcast=True)
 
 @socketio.on('send_chat_message')
 def handle_global_msg(data):
-    """ Relais des messages globaux pour synchroniser l'ensemble du réseau """
     emit('global_chat_message', data, broadcast=True, include_self=False)
 
 @socketio.on('disconnect')
