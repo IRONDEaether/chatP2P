@@ -3,15 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AOO1 P2P — Secure Network</title>
+    <title>AOO1 V1.6 — Ultra Responsive & P2P Complete Network</title>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', 'Segoe UI', sans-serif; }
 
         body {
-            background: #0f0c20;
+            background: linear-gradient(rgba(10, 10, 20, 0.88), rgba(20, 5, 15, 0.92)), 
+                        url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1920&auto=format&fit=crop') no-repeat center center fixed;
+            background-size: cover;
             color: #fff;
+            min-height: 100vh;
             height: 100dvh;
             display: flex;
             justify-content: center;
@@ -19,168 +22,434 @@
             overflow: hidden;
         }
 
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
         .main-app {
-            width: 100%;
-            height: 100%;
+            width: 98%;
+            max-width: 1440px;
+            height: 95vh;
             display: flex;
+            gap: 15px;
+            padding: 12px;
             position: relative;
         }
 
-        /* Sidebar Responsive */
+        /* Sidebar & Navigation */
         .sidebar {
-            width: 320px;
-            background: rgba(20, 15, 35, 0.95);
-            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            width: 340px;
+            min-width: 280px;
             display: flex;
             flex-direction: column;
             gap: 10px;
-            padding: 12px;
+            padding: 15px;
+            overflow-y: auto;
             z-index: 10;
-            transition: all 0.3s ease;
         }
 
-        /* Top Bar Boutique & Audio Header */
         .top-header-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(0,0,0,0.3);
             padding: 8px 12px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
         .avatar-container {
-            width: 55px; height: 55px;
-            border-radius: 50%; border: 2px solid #ff79c6;
-            margin: 0 auto; overflow: hidden;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 22px; font-weight: bold; color: #ff79c6;
-            cursor: pointer; background: rgba(0,0,0,0.3);
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            border: 2px solid #ff79c6;
+            margin: 4px auto;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #ff79c6;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(255, 121, 198, 0.4);
         }
         .avatar-container img { width: 100%; height: 100%; object-fit: cover; }
 
-        input, select, button {
+        .stats-bar {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,121,198,0.3);
+            border-radius: 10px;
+            padding: 8px;
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+        }
+        .stat-val { color: #50fa7b; font-weight: bold; font-size: 14px; }
+        .stat-lbl { font-size: 10px; color: #aaa; }
+
+        input, select, textarea, button {
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 8px; border-radius: 6px;
-            color: #fff; outline: none; font-size: 12px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            color: #fff;
+            outline: none;
+            font-size: 12px;
         }
+        select option { background: #1a1a2e; color: #fff; }
 
         button {
             background: linear-gradient(135deg, #ff79c6, #bd93f9);
-            color: #000; font-weight: bold; border: none; cursor: pointer;
+            color: #000;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+        button:hover { transform: translateY(-2px); filter: brightness(1.1); }
+
+        .user-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-top: 4px;
+            font-size: 11px;
         }
 
-        /* Chat Window */
+        /* Zone de Chat */
         .chat-container {
-            flex: 1; display: flex; flex-direction: column;
-            background: rgba(10, 8, 20, 0.6); position: relative;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            position: relative;
+            min-width: 0;
         }
 
         .salons-nav {
-            display: flex; gap: 5px; padding: 10px;
-            background: rgba(0,0,0,0.2); overflow-x: auto;
+            display: flex;
+            gap: 5px;
+            margin-bottom: 8px;
+            overflow-x: auto;
+            padding-bottom: 4px;
         }
-        .salon-btn { padding: 6px 12px; font-size: 11px; }
+        .salon-btn {
+            padding: 6px 12px;
+            font-size: 11px;
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.1);
+            white-space: nowrap;
+        }
         .salon-btn.active { background: #ff79c6; color: #000; }
 
+        .chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
         .messages-area {
-            flex: 1; overflow-y: auto; padding: 15px;
-            display: flex; flex-direction: column; gap: 10px;
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px 5px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
 
         .msg-bubble {
-            max-width: 75%; padding: 8px 12px; border-radius: 10px;
-            font-size: 13px; word-break: break-word;
+            max-width: 80%;
+            padding: 10px 14px;
+            border-radius: 14px;
+            font-size: 13px;
+            backdrop-filter: blur(8px);
+            word-break: break-word;
+            display: flex;
+            flex-direction: column;
         }
-        .msg-bubble.local { align-self: flex-end; background: rgba(255, 121, 198, 0.25); border: 1px solid #ff79c6; }
-        .msg-bubble.remote { align-self: flex-start; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255,255,255,0.2); }
-
-        .user-card {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 6px; background: rgba(255, 255, 255, 0.05);
-            border-radius: 6px; margin-top: 4px; font-size: 11px;
+        .msg-sender-name {
+            font-size: 10px;
+            font-weight: bold;
+            color: #ff79c6;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .user-title-badge {
+            background: #bd93f9;
+            color: #000;
+            padding: 1px 5px;
+            border-radius: 4px;
+            font-size: 9px;
+        }
+        .msg-bubble.local {
+            align-self: flex-end;
+            background: rgba(255, 121, 198, 0.25);
+            border: 1px solid rgba(255, 121, 198, 0.4);
+        }
+        .msg-bubble.remote {
+            align-self: flex-start;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
-        .input-bar { display: flex; gap: 6px; padding: 10px; background: rgba(0,0,0,0.4); }
+        .media-preview { max-width: 100%; max-height: 250px; border-radius: 10px; margin-top: 5px; }
 
-        /* Boutique Pop-up Mini Fenêtre */
+        .fomo-locked-box {
+            background: rgba(255, 85, 85, 0.15);
+            border: 1px dashed #ff5555;
+            padding: 14px;
+            border-radius: 10px;
+            text-align: left;
+            margin: 5px 0;
+        }
+
+        .input-bar {
+            display: flex;
+            gap: 8px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            align-items: center;
+        }
+
+        /* Fenêtre Pop-up Modale pour la Boutique & Guide */
         .modal {
-            display: none; position: fixed;
-            top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 90%; max-width: 500px; max-height: 80vh;
-            background: #140f23; border: 1px solid #ff79c6;
-            border-radius: 12px; padding: 15px; z-index: 100;
-            overflow-y: auto; box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            display: none;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%; max-width: 700px; max-height: 85vh;
+            background: rgba(15, 12, 32, 0.98);
+            border: 1px solid #ff79c6;
+            border-radius: 16px;
+            z-index: 100;
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: 0 0 30px rgba(0,0,0,0.9);
+        }
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+        .shop-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
         }
 
-        /* Adaptabilité Mobile */
-        @media (max-width: 768px) {
-            .main-app { flex-direction: column; }
-            .sidebar { width: 100%; height: 200px; overflow-y: auto; }
-            .msg-bubble { max-width: 90%; }
+        .rec-btn { background: #ff5555; color: #fff; }
+        .rec-btn.recording { animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+
+        .guide-box {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,121,198,0.2);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 15px;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .fomo-form {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 5px;
+        }
+
+        /* Design Adaptatif Mobile / Écrans Réduits */
+        @media (max-width: 850px) {
+            .main-app { flex-direction: column; height: 100dvh; width: 100%; padding: 4px; gap: 6px; }
+            .sidebar { width: 100%; height: 210px; min-width: 100%; padding: 8px; }
+            .chat-container { height: calc(100% - 220px); padding: 8px; }
+            .msg-bubble { max-width: 92%; }
         }
     </style>
 </head>
 <body>
 
 <div class="main-app">
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <!-- Barre du haut avec Son et Boutique -->
+    <!-- Sidebar / Barre Latérale -->
+    <div class="sidebar glass-panel">
+        <!-- Top Bar : Audio & Boutique Icon -->
         <div class="top-header-bar">
             <button onclick="playShopSound(); openShop()" style="font-size:11px;">🛍️ Boutique</button>
             <div style="display:flex; align-items:center; gap:4px;">
                 <span style="font-size:10px;">🔊</span>
-                <input type="range" id="volControl" min="0" max="0.3" step="0.01" value="0.05" style="width:50px;" onchange="updateVolume()">
+                <input type="range" id="volControl" min="0" max="0.3" step="0.01" value="0.05" style="width:55px;" onchange="updateVolume()">
             </div>
         </div>
 
-        <div style="text-align: center; margin-top: 5px;">
+        <div style="text-align: center;">
             <div class="avatar-container" onclick="document.getElementById('photoInput').click()">
                 <span id="avatarText">?</span>
                 <img id="avatarImg" src="" style="display:none;">
             </div>
             <input type="file" id="photoInput" accept="image/*" style="display:none;" onchange="loadPhoto(this)">
-            <small id="myIdTag" style="color:#ff79c6;">ID: ------</small>
+            <h5 id="myIdTag" style="margin-top:2px; color:#ff79c6;">ID: ------</h5>
         </div>
 
+        <!-- Dashboard Dette / XP -->
+        <div class="stats-bar">
+            <div>
+                <div class="stat-val" id="myXP">0</div>
+                <div class="stat-lbl">Points XP 💎</div>
+            </div>
+            <div>
+                <div class="stat-val" id="myDebt" style="color:#ff5555;">0</div>
+                <div class="stat-lbl">Dette Cumulée 💳</div>
+            </div>
+        </div>
+
+        <!-- Registre Dette -->
+        <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius:8px; padding:6px; font-size:10px;">
+            <b>🧾 Registre de Dette :</b>
+            <div id="debtDetailsBox" style="color:#aaa; margin-top:2px; max-height:40px; overflow-y:auto;">Aucune dette active.</div>
+        </div>
+
+        <!-- Profil Miroir -->
+        <div style="background: rgba(255,255,255,0.03); padding:6px; border-radius:8px; font-size:10px;">
+            <b>🧠 Profil Miroir :</b>
+            <span id="psychProfile" style="color:#bd93f9;">Calme & Analytique</span>
+        </div>
+
+        <!-- Profil Config -->
         <input type="text" id="myPseudo" placeholder="Mon Pseudo" oninput="syncProfile()">
+        
+        <div style="display:flex; gap:4px;">
+            <input type="number" id="myAge" placeholder="Âge" style="width:60px;" oninput="syncProfile()">
+            <select id="mySexe" onchange="syncProfile()" style="flex:1;">
+                <option value="Mâle">Mâle</option>
+                <option value="Femelle">Femelle</option>
+            </select>
+            <select id="myPays" onchange="syncProfile()" style="flex:1.2;">
+                <option value="Mali">Mali</option>
+                <option value="France">France</option>
+                <option value="Sénégal">Sénégal</option>
+                <option value="Côte d'Ivoire">Côte d'Ivoire</option>
+                <option value="Autre">Autre</option>
+            </select>
+        </div>
 
-        <!-- Contacts Enregistrés LocalStorage -->
-        <h5 style="color:#8be9fd; font-size:11px; margin-top:6px;">👥 EN LIGNE (Cliquer pour Chatter)</h5>
-        <div id="peersBox" style="flex:1; overflow-y:auto;"></div>
+        <select id="myTitleSelect" onchange="syncProfile()">
+            <option value="Novice Niv.1">Titre: Novice Niv.1 (Niv.1)</option>
+        </select>
 
-        <h5 style="color:#ff5555; font-size:11px; margin-top:6px;">🚫 CONTACTS BLOQUÉS</h5>
-        <div id="blockedBox" style="max-height:60px; overflow-y:auto; font-size:10px;"></div>
+        <button onclick="openGuide()" style="background:#bd93f9; color:#000; font-size:11px;">📜 Guide & Règles du Jeu</button>
+
+        <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1);">
+
+        <!-- Liste des Contacts enregistrés & En Ligne (LocalStorage) -->
+        <h5 style="font-size:11px; color:#8be9fd;">👥 CONTACTS EN LIGNE (Cliquer pour PV)</h5>
+        <div id="peersBox" style="max-height: 100px; overflow-y: auto;"></div>
+
+        <h5 style="font-size:10px; color:#ff5555; margin-top:4px;">🚫 CONTACTS BLOQUÉS</h5>
+        <div id="blockedBox" style="max-height:50px; overflow-y:auto; font-size:9px;"></div>
     </div>
 
-    <!-- Zone de Chat -->
-    <div class="chat-container">
+    <!-- Zone de Chat Principal -->
+    <div class="chat-container glass-panel">
         <div class="salons-nav" id="salonsNavBox">
-            <button class="salon-btn active" onclick="switchSalon('main')">🌐 Général</button>
+            <button class="salon-btn active" id="btn_main" onclick="switchSalon('main')">🌐 Général</button>
+            <button class="salon-btn" id="btn_fomo" onclick="switchSalon('fomo')">📢 Annonces (FOMO)</button>
+            <button class="salon-btn" id="btn_talk" onclick="switchSalon('talk')">💬 Discussion & Dette</button>
+        </div>
+
+        <div class="chat-header">
+            <div>
+                <h3 id="currentSalonTitle" style="font-size:14px;">🌐 Zone Principale</h3>
+                <small id="salonSub" style="color:rgba(255,255,255,0.6); font-size:10px;">Espace d'échange P2P global</small>
+            </div>
+            <span id="typingNotice" style="font-size:10px; color:#50fa7b; font-style:italic;"></span>
         </div>
 
         <div class="messages-area" id="msgBox"></div>
 
-        <div class="input-bar">
-            <input type="text" id="chatInput" placeholder="Écrire un message P2P..." style="flex:1;" onkeypress="if(event.key==='Enter') sendCurrentMsg()">
-            <button onclick="sendCurrentMsg()">Envoyer</button>
+        <!-- Formulaire Annonce Dédié quand on est dans le salon FOMO -->
+        <div id="fomoInputContainer" class="fomo-form" style="display:none;">
+            <b style="color:#ff79c6; font-size:11px;">📢 NOUVELLE ANNONCE SECRÈTE (-15 XP)</b>
+            <input type="text" id="fomoTitle" placeholder="Titre de l'annonce...">
+            <input type="text" id="fomoSummary" placeholder="Résumé / Aperçu public de l'annonce...">
+            <textarea id="fomoSecret" placeholder="Le secret ou le contenu masqué..." rows="2"></textarea>
+            <button onclick="sendFomoAnnouncement()" style="background:#50fa7b; color:#000;">Publier l'Annonce (Vérification Humaine)</button>
+        </div>
+
+        <!-- Barre d'envoi standard avec Fichiers & Audio Voice -->
+        <div class="input-bar" id="standardInputContainer">
+            <button type="button" id="micBtn" class="rec-btn" onclick="toggleRecord()">🎤</button>
+            <label style="cursor:pointer; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); padding: 8px 10px; border-radius: 8px;" title="Envoyer Fichier / Media">
+                📎 <input type="file" id="fileAttach" style="display:none" onchange="sendFile(this)">
+            </label>
+            <input type="text" id="chatInput" placeholder="Tapez votre message..." style="flex:1;" oninput="handleTyping()" onkeypress="if(event.key==='Enter') sendCurrentMsg()">
+            <button onclick="sendCurrentMsg()">Envoyer (+1 XP)</button>
         </div>
     </div>
-</div>
 
-<!-- Fenêtre Boutique Pop-Up -->
-<div class="modal" id="shopModal">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h3 style="color:#ff79c6;">🛍️ Mini Boutique P2P</h3>
-        <button onclick="closeShop()" style="background:#ff5555; color:#fff; padding:2px 8px;">X</button>
+    <!-- Modal Boutique (50 Titres & Création Salons) -->
+    <div class="modal" id="shopModal">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 style="color:#ff79c6;">🛍️ Boutique des 50 Titres & Salons</h3>
+            <button onclick="closeShop()" style="background:#ff5555; color:#fff; padding:2px 8px;">X</button>
+        </div>
+        <p style="font-size:11px; margin-top:4px;">Montez les échelons d'autorité (Niveau 1 à 50) pour débloquer le réseau.</p>
+        
+        <div class="shop-card" style="border: 1px solid #ff79c6; margin-top:10px;">
+            <h4 style="color:#ff79c6;">➕ Créer un Salon Privé</h4>
+            <p style="font-size:10px; color:#aaa; margin:4px 0;">Coût : 30 XP. Fixez le niveau d'autorité minimal requis.</p>
+            <div style="display:flex; gap:5px;">
+                <input type="text" id="newSalonName" placeholder="Nom du salon" style="flex:1;">
+                <input type="number" id="newSalonMinLevel" placeholder="Niv. requis (1-50)" min="1" max="50" style="width:110px;">
+                <button onclick="createCustomSalon()" style="background:#ff79c6;">Créer (30 XP)</button>
+            </div>
+        </div>
+
+        <div class="shop-grid" id="shopTitlesGrid"></div>
     </div>
-    <p style="font-size:11px; margin: 8px 0;">Débloque des fonctionnalités et salons personnalisés.</p>
-    <div id="shopContent" style="font-size:12px;">
-        <p>• Salon VIP Autorité (Niv 10) - <b>100 XP</b></p>
-        <p>• Badge P2P Shield - <b>50 XP</b></p>
+
+    <!-- Modal Guide -->
+    <div class="modal" id="guideModal">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 style="color:#50fa7b;">📜 Guide Officiel AOO1</h3>
+            <button onclick="closeGuide()" style="background:#ff5555; color:#fff; padding:2px 8px;">X</button>
+        </div>
+        <br>
+        <div class="guide-box">
+            <h4 style="color:#ff79c6;">1. 💎 Hiérarchie et 50 Titres</h4>
+            <p>• Les titres s'échelonnent du <b>Niveau 1 au Niveau 50</b>.</p>
+            <p>• Débloquez des titres plus élevés pour accéder aux salons privés restreints.</p>
+        </div>
+
+        <div class="guide-box">
+            <h4 style="color:#ff79c6;">2. 📢 Annonces FOMO & Protection Anti-Spam</h4>
+            <p>• Publier une annonce masquée coûte <b>15 XP</b>.</p>
+            <p>• <b>Anti-Spam & Vérification Humaine :</b> Une question s'affiche avant chaque envoi sensible.</p>
+        </div>
     </div>
 </div>
 
@@ -189,106 +458,487 @@
     let myPeerId = localStorage.getItem('aoo1_id') || Math.floor(10000000 + Math.random() * 90000000).toString();
     localStorage.setItem('aoo1_id', myPeerId);
 
+    // 50 TITRES D'AUTORITÉ
+    const ALL_TITLES = Array.from({ length: 50 }, (_, i) => {
+        const lvl = i + 1;
+        const names = [
+            "Novice", "Initié", "Chercheur", "Éclaireur", "Sentinelle", 
+            "Garde", "Agent", "Cryptographe", "Ombre", "Spectre",
+            "Opérateur", "Analyste", "Stratège", "Infiltrateur", "Vanguard",
+            "Capitaine", "Commandant", "Exécuteur", "Maître", "Grand Maître",
+            "Oracle", "Archiviste", "Gardiens des Clés", "Cyber-Vigilant", "Architecte",
+            "Seigneur", "Baron du Code", "Comte Virtuel", "Duc du Réseau", "Souverain",
+            "Légendaire", "Mythique", "Transcendant", "Éternel", "Invincible",
+            "Titan", "Colosse", "Dominateur", "Maître du Jeu", "Grand Concepteur",
+            "Fondateur", "Imperator", "Oméga", "Alpha", "Suprême",
+            "Monolithe", "Absolu", "Dieu du Réseau", "Entité Suprême", "Monarque Absolu"
+        ];
+        return {
+            name: `${names[i]} Niv.${lvl}`,
+            level: lvl,
+            price: lvl === 1 ? 0 : Math.floor(15 * Math.pow(1.18, lvl))
+        };
+    });
+
+    let myXP = parseInt(localStorage.getItem('aoo1_xp') || '50');
+    let myDebt = parseInt(localStorage.getItem('aoo1_debt') || '0');
+    let debtRegistry = JSON.parse(localStorage.getItem('aoo1_debt_registry') || '{}');
     let blockedUsers = JSON.parse(localStorage.getItem('aoo1_blocked') || '[]');
-    let currentTarget = 'main';
-    
+    let myPhoto = localStorage.getItem('aoo1_photo') || '';
+    let currentSalon = 'main';
+    let activeTarget = 'main';
+    let lastMsgTime = 0;
+
+    let myTitles = JSON.parse(localStorage.getItem('aoo1_titles') || '["Novice Niv.1"]');
+    let activeTitle = localStorage.getItem('aoo1_active_title') || 'Novice Niv.1';
+    let customSalons = JSON.parse(localStorage.getItem('aoo1_custom_salons') || '[]');
+
+    let peerConnections = {};
+    let onlinePeersData = {};
+    let isRecording = false, mediaRecorder, audioChunks = [];
+    let typingTimeout, typingStart = 0;
+
     const notifSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
     const shopSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3');
-    
+    notifSound.volume = 0.05; shopSound.volume = 0.05;
+
     document.getElementById('myIdTag').innerText = "ID: " + myPeerId;
-    if(localStorage.getItem('aoo1_pseudo')) document.getElementById('myPseudo').value = localStorage.getItem('aoo1_pseudo');
+    updateStatsUI();
+    renderTitlesDropdown();
+    renderShopGrid();
+    renderSalonsNav();
 
-    // WebRTC PeerJS Setup
-    const peer = new Peer(myPeerId);
-    let peerConnections = {};
-
-    peer.on('open', () => syncProfile());
-    peer.on('connection', (conn) => {
-        if(blockedUsers.includes(conn.peer)) return;
-        conn.on('data', (data) => handleData(data, conn.peer));
-    });
-
-    function syncProfile() {
-        const pseudo = document.getElementById('myPseudo').value.trim() || 'Anonyme';
-        localStorage.setItem('aoo1_pseudo', pseudo);
-        socket.emit('register', { peer_id: myPeerId, pseudo: pseudo });
+    if(myPhoto) {
+        document.getElementById('avatarImg').src = myPhoto;
+        document.getElementById('avatarImg').style.display = 'block';
+        document.getElementById('avatarText').style.display = 'none';
     }
 
-    // Gestion de la liste des connectés
-    socket.on('peer_discovery', (users) => {
-        const box = document.getElementById('peersBox');
-        box.innerHTML = '';
-        users.forEach(u => {
-            if (u.peer_id !== myPeerId && !blockedUsers.includes(u.peer_id)) {
-                box.innerHTML += `
-                    <div class="user-card">
-                        <span onclick="startPrivateChat('${u.peer_id}', '${u.pseudo}')" style="cursor:pointer; font-weight:bold;">🟢 ${u.pseudo}</span>
-                        <div>
-                            <button onclick="blockUser('${u.peer_id}')" style="background:#ff5555; font-size:9px; padding:2px 4px;">Bloquer</button>
-                        </div>
-                    </div>`;
-            }
-        });
-        renderBlockedList();
-    });
+    if(localStorage.getItem('aoo1_pseudo')) document.getElementById('myPseudo').value = localStorage.getItem('aoo1_pseudo');
 
-    socket.on('global_chat_message', (data) => {
-        if(!blockedUsers.includes(data.sender_id) && currentTarget === 'main') {
-            displayMsg({ sender: data.pseudo, text: data.text, isLocal: false });
-            notifSound.play().catch(()=>{});
-        }
-    });
+    // WEBRTC INIT
+    const peer = new Peer(myPeerId);
+    peer.on('open', () => syncProfile());
+    peer.on('connection', (conn) => registerConnection(conn));
 
-    function handleData(data, senderId) {
+    function registerConnection(conn) {
+        if(blockedUsers.includes(conn.peer)) return;
+        peerConnections[conn.peer] = conn;
+        conn.on('data', (data) => handleIncomingData(data, conn.peer));
+        conn.on('close', () => { delete peerConnections[conn.peer]; renderPeersList(); });
+    }
+
+    function connectToPeer(targetId) {
+        if (targetId === myPeerId || peerConnections[targetId] || blockedUsers.includes(targetId)) return;
+        const conn = peer.connect(targetId);
+        registerConnection(conn);
+    }
+
+    function verifyHumanity() {
+        const n1 = Math.floor(Math.random() * 9) + 1;
+        const n2 = Math.floor(Math.random() * 9) + 1;
+        const ans = prompt(`🛡️ VÉRIFICATION HUMAINE (Anti-Spam) :\nCombien font ${n1} + ${n2} ?`);
+        return parseInt(ans) === (n1 + n2);
+    }
+
+    function handleIncomingData(data, senderId) {
         if(blockedUsers.includes(senderId)) return;
-        displayMsg({ sender: data.pseudo, text: data.text, isLocal: false });
+
+        if (data.type === 'typing') {
+            if (activeTarget === senderId || activeTarget === currentSalon) {
+                document.getElementById('typingNotice').innerText = `${data.pseudo} écrit...`;
+                clearTimeout(typingTimeout);
+                typingTimeout = setTimeout(() => { document.getElementById('typingNotice').innerText = ''; }, 2000);
+            }
+            return;
+        }
+
         notifSound.play().catch(()=>{});
+
+        if (data.type === 'fomo_announcement') {
+            displayFomoCard(data);
+        } else if (data.type === 'debt_transfer') {
+            myXP += data.amount;
+            updateStatsUI();
+            alert(`🔥 Un pair a consulté ton annonce ! Tu reçois +${data.amount} XP !`);
+        } else if (data.type === 'pay_debt_step') {
+            myXP += data.amount;
+            updateStatsUI();
+        } else {
+            displayMsg({
+                sender: data.pseudo,
+                title: data.title,
+                text: data.text,
+                fileData: data.fileData,
+                fileName: data.fileName,
+                fileType: data.fileType,
+                isLocal: false,
+                hesitation: data.hesitation
+            });
+        }
+    }
+
+    function broadcastP2P(payload) {
+        if (activeTarget !== 'main' && activeTarget !== 'fomo' && activeTarget !== 'talk' && !activeTarget.startsWith('custom_')) {
+            if (peerConnections[activeTarget] && peerConnections[activeTarget].open) {
+                peerConnections[activeTarget].send(payload);
+            }
+        } else {
+            Object.values(peerConnections).forEach(conn => {
+                if (conn.open) conn.send(payload);
+            });
+        }
+    }
+
+    document.getElementById('chatInput').addEventListener('keydown', () => {
+        if(!typingStart) typingStart = Date.now();
+    });
+
+    function getHesitationLevel() {
+        if(!typingStart) return "Direct ⚡";
+        let duration = (Date.now() - typingStart) / 1000;
+        typingStart = 0;
+        if(duration > 5) return "Très Hésitant 😰";
+        if(duration > 2) return "Calculateur 🤔";
+        return "Impulsif ⚡";
+    }
+
+    function handleTyping() {
+        const myPseudo = document.getElementById('myPseudo').value.trim() || 'Anonyme';
+        broadcastP2P({ type: 'typing', pseudo: myPseudo });
     }
 
     function sendCurrentMsg() {
+        const now = Date.now();
+        if(now - lastMsgTime < 1500) return alert("⚠️ ANTI-SPAM : Attends une seconde.");
+
         const input = document.getElementById('chatInput');
         const txt = input.value.trim();
         if(!txt) return;
 
-        const myName = document.getElementById('myPseudo').value.trim() || 'Anonyme';
-        const payload = { pseudo: myName, text: txt, sender_id: myPeerId };
+        if(!hasAccessToSalon(currentSalon)) return alert("🔒 Niveau d'autorité insuffisant !");
 
-        if(currentTarget === 'main') {
-            socket.emit('send_chat_message', payload);
-        } else if(peerConnections[currentTarget]) {
-            peerConnections[currentTarget].send(payload);
+        lastMsgTime = now;
+        myXP += 1;
+
+        if(currentSalon === 'talk' && myDebt > 0) {
+            let creditors = Object.keys(debtRegistry);
+            if(creditors.length > 0) {
+                let targetCreditor = creditors[0];
+                let payAmt = Math.min(5, debtRegistry[targetCreditor]);
+                debtRegistry[targetCreditor] -= payAmt;
+                myDebt -= payAmt;
+                if(debtRegistry[targetCreditor] <= 0) delete debtRegistry[targetCreditor];
+
+                if(peerConnections[targetCreditor] && peerConnections[targetCreditor].open) {
+                    peerConnections[targetCreditor].send({ type: 'pay_debt_step', amount: payAmt });
+                }
+            }
         }
 
-        displayMsg({ sender: myName, text: txt, isLocal: true });
+        updateStatsUI();
+        const myName = document.getElementById('myPseudo').value.trim() || 'Anonyme';
+        const hesitation = getHesitationLevel();
+
+        const payload = {
+            type: 'chat', pseudo: myName, title: activeTitle, text: txt, sender_id: myPeerId, hesitation: hesitation
+        };
+
+        broadcastP2P(payload);
+        socket.emit('send_chat_message', payload);
+        displayMsg({ sender: myName, title: activeTitle, text: txt, isLocal: true, hesitation: hesitation });
         input.value = '';
     }
 
-    function startPrivateChat(peerId, pseudo) {
-        currentTarget = peerId;
-        if(!peerConnections[peerId]) {
-            const conn = peer.connect(peerId);
-            conn.on('open', () => { peerConnections[peerId] = conn; });
-            conn.on('data', (data) => handleData(data, peerId));
-        }
-        document.getElementById('msgBox').innerHTML = `<div style="color:#50fa7b; font-size:11px;">Chat Privé P2P avec ${pseudo}</div>`;
+    function sendFomoAnnouncement() {
+        const now = Date.now();
+        if(now - lastMsgTime < 3000) return alert("⚠️ ANTI-SPAM : Patientez.");
+
+        const title = document.getElementById('fomoTitle').value.trim();
+        const summary = document.getElementById('fomoSummary').value.trim();
+        const secret = document.getElementById('fomoSecret').value.trim();
+
+        if(!title || !summary || !secret) return alert("Remplissez tous les champs !");
+        if(myXP < 15) return alert("Il vous faut au moins 15 XP !");
+        if(!verifyHumanity()) return alert("❌ Vérification humaine échouée !");
+
+        lastMsgTime = now;
+        myXP -= 15;
+        updateStatsUI();
+
+        const myName = document.getElementById('myPseudo').value.trim() || 'Anonyme';
+        const payload = {
+            type: 'fomo_announcement', pseudo: myName, title: activeTitle, announcementTitle: title, summary: summary, secret: secret, sender_id: myPeerId
+        };
+
+        broadcastP2P(payload);
+        socket.emit('send_chat_message', payload);
+        displayFomoCard(payload);
+
+        document.getElementById('fomoTitle').value = '';
+        document.getElementById('fomoSummary').value = '';
+        document.getElementById('fomoSecret').value = '';
     }
 
-    function switchSalon(type) {
-        currentTarget = type;
-        document.getElementById('msgBox').innerHTML = '';
-    }
-
-    function displayMsg(m) {
+    function displayFomoCard(d) {
         const b = document.getElementById('msgBox');
+        const cardId = 'fomo_' + Date.now() + Math.floor(Math.random()*100);
+        
         b.innerHTML += `
-            <div class="msg-bubble ${m.isLocal ? 'local' : 'remote'}">
-                <b style="font-size:10px; color:#ff79c6;">${m.sender}</b><br>
-                ${m.text}
+            <div class="fomo-locked-box" id="${cardId}">
+                <div style="font-size:10px; color:#ff79c6; font-weight:bold;">📢 ANNONCE PAR : ${d.pseudo} (${d.title || 'Novice'})</div>
+                <h3 style="color:#50fa7b; margin:4px 0;">${d.announcementTitle}</h3>
+                <p style="font-size:12px; color:#eee; margin-bottom:6px;"><b>Aperçu :</b> ${d.summary}</p>
+                <div style="font-size:10px; color:#aaa; margin-bottom:8px;">Coût de déverrouillage : 15 XP de Dette</div>
+                <button onclick="unlockFomo('${cardId}', '${encodeURIComponent(d.secret)}', '${d.sender_id}')">🔓 Révéler l'Info Secrète (+15 Dette)</button>
             </div>`;
         b.scrollTop = b.scrollHeight;
     }
 
-    // Gestion LocalStorage Bloqués
+    function unlockFomo(cardId, encodedSecret, authorId) {
+        const secretText = decodeURIComponent(encodedSecret);
+        if(authorId === myPeerId) {
+            document.getElementById(cardId).innerHTML += `<div style="background:rgba(0,0,0,0.4); padding:8px; border-radius:6px; margin-top:6px; color:#50fa7b;"><b>CONTENU SECRET :</b><br>${secretText}</div>`;
+            return;
+        }
+
+        if(!verifyHumanity()) return alert("❌ Vérification humaine échouée !");
+
+        myDebt += 15;
+        debtRegistry[authorId] = (debtRegistry[authorId] || 0) + 15;
+        updateStatsUI();
+        
+        if (peerConnections[authorId] && peerConnections[authorId].open) {
+            peerConnections[authorId].send({ type: 'debt_transfer', amount: 15 });
+        }
+
+        document.getElementById(cardId).innerHTML += `<div style="background:rgba(0,0,0,0.4); padding:8px; border-radius:6px; margin-top:6px; color:#50fa7b;"><b>CONTENU SECRET :</b><br>${secretText}</div>`;
+    }
+
+    function displayMsg(m) {
+        const b = document.getElementById('msgBox');
+        const bubbleType = m.isLocal ? 'local' : 'remote';
+        let contentHtml = '';
+
+        if(m.text) contentHtml += `<div>${m.text}</div>`;
+        if(m.fileData) {
+            if(m.fileType && m.fileType.startsWith('image/')) {
+                contentHtml += `<img src="${m.fileData}" class="media-preview">`;
+            } else if(m.fileType && m.fileType.startsWith('audio/')) {
+                contentHtml += `<audio controls src="${m.fileData}" style="width:100%; height:32px; margin-top:4px;"></audio>`;
+            } else {
+                contentHtml += `<br><a href="${m.fileData}" download="${m.fileName || 'fichier'}" style="color:#8be9fd;">📁 Fichier : ${m.fileName || 'Télécharger'}</a>`;
+            }
+        }
+
+        b.innerHTML += `
+            <div class="msg-bubble ${bubbleType}">
+                <span class="msg-sender-name">
+                    ${m.sender} <span class="user-title-badge">${m.title || 'Novice'}</span>
+                    <small style="color:#aaa; font-size:8px;">(${m.hesitation || 'Direct'})</small>
+                </span>
+                ${contentHtml}
+            </div>`;
+        b.scrollTop = b.scrollHeight;
+    }
+
+    function sendFile(elem) {
+        const file = elem.files[0];
+        if (!file || !hasAccessToSalon(currentSalon)) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const myName = document.getElementById('myPseudo').value.trim() || 'Anonyme';
+            const payload = { type: 'chat', fileData: e.target.result, fileName: file.name, fileType: file.type, pseudo: myName, title: activeTitle };
+            myXP += 1;
+            updateStatsUI();
+            broadcastP2P(payload);
+            displayMsg({ sender: myName, title: activeTitle, fileName: file.name, fileType: file.type, fileData: e.target.result, isLocal: true });
+            elem.value = '';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    async function toggleRecord() {
+        const btn = document.getElementById('micBtn');
+        if (!isRecording) {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const myName = document.getElementById('myPseudo').value.trim() || 'Anonyme';
+                        const payload = { type: 'chat', fileData: reader.result, fileType: 'audio/webm', pseudo: myName, title: activeTitle };
+                        myXP += 1;
+                        updateStatsUI();
+                        broadcastP2P(payload);
+                        displayMsg({ sender: myName, title: activeTitle, fileData: reader.result, fileType: 'audio/webm', isLocal: true });
+                    };
+                    reader.readAsDataURL(blob);
+                };
+                mediaRecorder.start();
+                isRecording = true;
+                btn.classList.add('recording');
+            } catch (err) { alert("Accès micro refusé !"); }
+        } else {
+            mediaRecorder.stop();
+            isRecording = false;
+            btn.classList.remove('recording');
+        }
+    }
+
+    function updateStatsUI() {
+        document.getElementById('myXP').innerText = myXP;
+        document.getElementById('myDebt').innerText = myDebt;
+        localStorage.setItem('aoo1_xp', myXP);
+        localStorage.setItem('aoo1_debt', myDebt);
+        localStorage.setItem('aoo1_debt_registry', JSON.stringify(debtRegistry));
+
+        const debtBox = document.getElementById('debtDetailsBox');
+        if(myDebt <= 0) {
+            debtBox.innerText = "Aucune dette active.";
+        } else {
+            let details = '';
+            for(let id in debtRegistry) {
+                let name = onlinePeersData[id] || id;
+                details += `• ${debtRegistry[id]} XP dûs à ${name}<br>`;
+            }
+            debtBox.innerHTML = details || `${myDebt} XP dûs en tout.`;
+        }
+    }
+
+    function syncProfile() {
+        const pseudo = document.getElementById('myPseudo').value.trim() || 'Anonyme';
+        activeTitle = document.getElementById('myTitleSelect').value;
+        localStorage.setItem('aoo1_pseudo', pseudo);
+        localStorage.setItem('aoo1_active_title', activeTitle);
+        document.getElementById('avatarText').innerText = pseudo.charAt(0).toUpperCase();
+
+        socket.emit('register', { peer_id: myPeerId, pseudo: pseudo, title: activeTitle });
+    }
+
+    function getTitleLevel(titleName) {
+        const found = ALL_TITLES.find(t => t.name === titleName);
+        return found ? found.level : 1;
+    }
+
+    function hasAccessToSalon(salonId) {
+        if(salonId === 'main' || salonId === 'fomo' || salonId === 'talk') return true;
+        const targetSalon = customSalons.find(s => s.id === salonId);
+        if(!targetSalon) return true;
+        return getTitleLevel(activeTitle) >= (targetSalon.minLevel || 1);
+    }
+
+    function createCustomSalon() {
+        const name = document.getElementById('newSalonName').value.trim();
+        const minLevel = parseInt(document.getElementById('newSalonMinLevel').value || '1');
+
+        if(!name) return alert("Nom invalide !");
+        if(myXP < 30) return alert("XP insuffisants (30 XP requis) !");
+
+        myXP -= 30;
+        updateStatsUI();
+
+        const salonObj = { id: 'custom_' + Date.now(), name: name, minLevel: minLevel };
+        customSalons.push(salonObj);
+        localStorage.setItem('aoo1_custom_salons', JSON.stringify(customSalons));
+
+        renderSalonsNav();
+        closeShop();
+        switchSalon(salonObj.id);
+    }
+
+    function renderSalonsNav() {
+        const box = document.getElementById('salonsNavBox');
+        box.innerHTML = `
+            <button class="salon-btn ${activeTarget==='main'?'active':''}" id="btn_main" onclick="switchSalon('main')">🌐 Général</button>
+            <button class="salon-btn ${activeTarget==='fomo'?'active':''}" id="btn_fomo" onclick="switchSalon('fomo')">📢 FOMO</button>
+            <button class="salon-btn ${activeTarget==='talk'?'active':''}" id="btn_talk" onclick="switchSalon('talk')">💬 Discussion</button>
+        `;
+        customSalons.forEach(s => {
+            box.innerHTML += `<button class="salon-btn ${activeTarget===s.id?'active':''}" id="btn_${s.id}" onclick="switchSalon('${s.id}')">🔒 ${s.name} (Niv.${s.minLevel})</button>`;
+        });
+    }
+
+    function switchSalon(salonId) {
+        currentSalon = salonId;
+        activeTarget = salonId;
+        document.querySelectorAll('.salon-btn').forEach(b => b.classList.remove('active'));
+        const activeBtn = document.getElementById('btn_' + salonId);
+        if(activeBtn) activeBtn.classList.add('active');
+
+        if(salonId === 'fomo') {
+            document.getElementById('fomoInputContainer').style.display = 'flex';
+            document.getElementById('standardInputContainer').style.display = 'none';
+        } else {
+            document.getElementById('fomoInputContainer').style.display = 'none';
+            document.getElementById('standardInputContainer').style.display = 'flex';
+        }
+
+        if(salonId === 'main') {
+            document.getElementById('currentSalonTitle').innerText = "🌐 Zone Principale";
+            document.getElementById('salonSub').innerText = "Espace libre d'échange";
+        } else if(salonId === 'fomo') {
+            document.getElementById('currentSalonTitle').innerText = "📢 Zone Annonces (FOMO)";
+            document.getElementById('salonSub').innerText = "Annonces masquées (-15 XP pour poster, +15 Dette pour lire)";
+        } else if(salonId === 'talk') {
+            document.getElementById('currentSalonTitle').innerText = "💬 Discussion & Remboursement";
+            document.getElementById('salonSub').innerText = "Chaque message rembourse 5 XP de votre dette aux pairs !";
+        } else if(salonId.startsWith('custom_')) {
+            const cs = customSalons.find(s => s.id === salonId);
+            document.getElementById('currentSalonTitle').innerText = "🔒 " + (cs ? cs.name : 'Salon Privé');
+            document.getElementById('salonSub').innerText = `Autorité requise : Niveau ${cs ? cs.minLevel : 1}`;
+        } else {
+            document.getElementById('currentSalonTitle').innerText = "💬 PV Direct avec " + (onlinePeersData[salonId] || salonId);
+            document.getElementById('salonSub').innerText = "Canal P2P Privé";
+        }
+        document.getElementById('msgBox').innerHTML = '';
+    }
+
+    function renderShopGrid() {
+        const grid = document.getElementById('shopTitlesGrid');
+        grid.innerHTML = '';
+        ALL_TITLES.forEach(t => {
+            const owned = myTitles.includes(t.name);
+            grid.innerHTML += `
+                <div class="shop-card" style="${owned ? 'border: 1px solid #50fa7b;' : ''}">
+                    <h4>${t.name}</h4>
+                    <p style="font-size:10px; color:#aaa; margin:4px 0;">Autorité : Niv.${t.level}</p>
+                    <p style="font-size:11px; color:#ff79c6; margin-bottom:6px;">${t.price === 0 ? 'GRATUIT' : t.price + ' XP'}</p>
+                    <button onclick="buyTitle('${t.name}', ${t.price})" ${owned ? 'disabled style="opacity:0.5; background:#50fa7b;"' : ''}>
+                        ${owned ? 'Possédé' : 'Acheter'}
+                    </button>
+                </div>`;
+        });
+    }
+
+    function buyTitle(titleName, price) {
+        if(myTitles.includes(titleName)) return alert("Titre déjà possédé !");
+        if(myXP < price) return alert("Points XP insuffisants !");
+
+        myXP -= price;
+        myTitles.push(titleName);
+        localStorage.setItem('aoo1_titles', JSON.stringify(myTitles));
+        updateStatsUI();
+        renderTitlesDropdown();
+        renderShopGrid();
+        syncProfile();
+        alert(`🎉 Félicitations ! Tu as débloqué le titre d'autorité "${titleName}" !`);
+    }
+
+    function renderTitlesDropdown() {
+        const sel = document.getElementById('myTitleSelect');
+        sel.innerHTML = '';
+        myTitles.forEach(t => {
+            sel.innerHTML += `<option value="${t}" ${t === activeTitle ? 'selected' : ''}>Titre: ${t}</option>`;
+        });
+    }
+
+    // Gestion Bloquer et LocalStorage Contacts
     function blockUser(peerId) {
         if(!blockedUsers.includes(peerId)) {
             blockedUsers.push(peerId);
@@ -307,34 +957,67 @@
         const box = document.getElementById('blockedBox');
         box.innerHTML = '';
         blockedUsers.forEach(id => {
-            box.innerHTML += `<div style="display:flex; justify-content:space-between; margin-top:2px;">
+            box.innerHTML += `<div style="display:flex; justify-content:space-between; margin-top:2px; background:rgba(0,0,0,0.2); padding:2px 4px; border-radius:4px;">
                 <span>ID: ${id.substring(0,6)}...</span>
-                <button onclick="unblockUser('${id}')" style="font-size:8px; background:#50fa7b;">Débloquer</button>
+                <button onclick="unblockUser('${id}')" style="font-size:8px; background:#50fa7b; padding:1px 4px;">Débloquer</button>
             </div>`;
         });
     }
 
-    // Audio et Modal Boutique
     function playShopSound() { shopSound.play().catch(()=>{}); }
     function openShop() { document.getElementById('shopModal').style.display = 'block'; }
     function closeShop() { document.getElementById('shopModal').style.display = 'none'; }
-    function updateVolume() { 
-        const v = document.getElementById('volControl').value;
-        notifSound.volume = v;
-        shopSound.volume = v;
-    }
+    function openGuide() { document.getElementById('guideModal').style.display = 'block'; }
+    function closeGuide() { document.getElementById('guideModal').style.display = 'none'; }
 
     function loadPhoto(elem) {
         const file = elem.files[0];
         if(!file) return;
         const reader = new FileReader();
         reader.onload = (e) => {
-            document.getElementById('avatarImg').src = e.target.result;
+            myPhoto = e.target.result;
+            localStorage.setItem('aoo1_photo', myPhoto);
+            document.getElementById('avatarImg').src = myPhoto;
             document.getElementById('avatarImg').style.display = 'block';
             document.getElementById('avatarText').style.display = 'none';
+            syncProfile();
         };
         reader.readAsDataURL(file);
     }
+
+    function updateVolume() { 
+        const v = document.getElementById('volControl').value;
+        notifSound.volume = v;
+        shopSound.volume = v;
+    }
+
+    socket.on('peer_discovery', (peersList) => {
+        peersList.forEach(p => {
+            if (p.peer_id !== myPeerId && !blockedUsers.includes(p.peer_id)) {
+                onlinePeersData[p.peer_id] = p.pseudo;
+                connectToPeer(p.peer_id);
+            }
+        });
+        renderPeersList();
+    });
+
+    function renderPeersList() {
+        const box = document.getElementById('peersBox');
+        box.innerHTML = '';
+        Object.keys(onlinePeersData).forEach(id => {
+            if(!blockedUsers.includes(id)) {
+                box.innerHTML += `
+                    <div class="user-card">
+                        <span onclick="switchSalon('${id}')" style="cursor:pointer; font-weight:bold; color:#50fa7b;">🟢 ${onlinePeersData[id]}</span>
+                        <button onclick="blockUser('${id}')" style="font-size:8px; background:#ff5555; padding:2px 4px;">Bloquer</button>
+                    </div>`;
+            }
+        });
+        renderBlockedList();
+    }
+
+    socket.on('connect', () => { syncProfile(); });
 </script>
+
 </body>
 </html>
