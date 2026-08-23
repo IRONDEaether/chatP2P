@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AOO1 V1.7 — P2P, Profils Complets, Statut Vu & Salons</title>
+    <title>AOO1 V1.7 — P2P & Multi-Canaux Synchronisés</title>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
@@ -262,7 +262,8 @@
         }
         .msg-status.seen { color: #50fa7b; font-weight: bold; }
 
-        .media-preview { max-width: 100%; max-height: 220px; border-radius: 8px; margin-top: 4px; }
+        .media-preview { max-width: 100%; max-height: 250px; border-radius: 8px; margin-top: 4px; }
+        .media-player { width: 100%; margin-top: 4px; border-radius: 6px; }
 
         .fomo-locked-box {
             background: rgba(255, 85, 85, 0.15);
@@ -466,11 +467,11 @@
             <button onclick="sendFomoAnnouncement()" style="background:#50fa7b; color:#000;">Publier l'Annonce (Vérification Humaine)</button>
         </div>
 
-        <!-- Barre d'envoi standard -->
+        <!-- Barre d'envoi standard (Medias/Sons/Photos) -->
         <div class="input-bar" id="standardInputContainer">
             <button type="button" id="micBtn" class="rec-btn" onclick="toggleRecord()">🎤</button>
-            <label style="cursor:pointer; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); padding: 7px 9px; border-radius: 8px;" title="Envoyer Fichier / Photo">
-                📎 <input type="file" id="fileAttach" style="display:none" onchange="sendFile(this)">
+            <label style="cursor:pointer; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); padding: 7px 9px; border-radius: 8px;" title="Envoyer Photo / Musique / Vidéo">
+                📎 <input type="file" id="fileAttach" accept="image/*,audio/*,video/*" style="display:none" onchange="sendFile(this)">
             </label>
             <input type="text" id="chatInput" placeholder="Tapez votre message..." style="flex:1;" oninput="handleTyping()" onkeypress="if(event.key==='Enter') sendCurrentMsg()">
             <button onclick="sendCurrentMsg()">Envoyer (+1 XP)</button>
@@ -545,7 +546,6 @@
     let myPeerId = localStorage.getItem('aoo1_id') || Math.floor(10000000 + Math.random() * 90000000).toString();
     localStorage.setItem('aoo1_id', myPeerId);
 
-    // SYSTEME DE 50 TITRES D'AUTORITÉ
     const ALL_TITLES = Array.from({ length: 50 }, (_, i) => {
         const lvl = i + 1;
         const names = [
@@ -577,7 +577,6 @@
 
     let myTitles = JSON.parse(localStorage.getItem('aoo1_titles') || '["Novice Niv.1"]');
     let activeTitle = localStorage.getItem('aoo1_active_title') || 'Novice Niv.1';
-
     let customSalons = JSON.parse(localStorage.getItem('aoo1_custom_salons') || '[]');
 
     let peerConnections = {};
@@ -611,7 +610,6 @@
     if(localStorage.getItem('aoo1_sexe')) document.getElementById('mySexe').value = localStorage.getItem('aoo1_sexe');
     if(localStorage.getItem('aoo1_pays')) document.getElementById('myPays').value = localStorage.getItem('aoo1_pays');
 
-    // WEBRTC PEERJS INIT
     const peer = new Peer(myPeerId);
     peer.on('open', (id) => { syncProfile(); });
     peer.on('connection', (conn) => { registerConnection(conn); });
@@ -710,7 +708,7 @@
     }
 
     function broadcastP2P(payload) {
-        // Envoi via WebRTC
+        // Envoi double couche : WebRTC P2P + Reseau global SocketIO
         if (activeTarget !== 'main' && activeTarget !== 'fomo' && activeTarget !== 'talk' && !activeTarget.startsWith('custom_')) {
             if (peerConnections[activeTarget] && peerConnections[activeTarget].open) {
                 peerConnections[activeTarget].send(payload);
@@ -720,7 +718,6 @@
                 if (conn.open) conn.send(payload);
             });
         }
-        // Doublon Sécurisé via SocketIO
         socket.emit('send_chat_message', payload);
     }
 
@@ -750,7 +747,7 @@
 
     function sendCurrentMsg() {
         const now = Date.now();
-        if(now - lastMsgTime < 1000) return alert("⚠️ ANTI-SPAM : Ralentis le rythme ! Attends une seconde.");
+        if(now - lastMsgTime < 500) return;
 
         const input = document.getElementById('chatInput');
         const txt = input.value.trim();
@@ -810,7 +807,7 @@
 
     function sendFomoAnnouncement() {
         const now = Date.now();
-        if(now - lastMsgTime < 3000) return alert("⚠️ ANTI-SPAM : Patientez avant de publier une autre annonce.");
+        if(now - lastMsgTime < 2000) return alert("⚠️ Patientez avant de publier une autre annonce.");
 
         const title = document.getElementById('fomoTitle').value.trim();
         const summary = document.getElementById('fomoSummary').value.trim();
@@ -891,7 +888,9 @@
             if(m.fileType && m.fileType.startsWith('image/')) {
                 contentHtml += `<img src="${m.fileData}" class="media-preview">`;
             } else if(m.fileType && m.fileType.startsWith('audio/')) {
-                contentHtml += `<audio controls src="${m.fileData}" style="width:100%; height:32px; margin-top:4px;"></audio>`;
+                contentHtml += `<audio controls src="${m.fileData}" class="media-player"></audio>`;
+            } else if(m.fileType && m.fileType.startsWith('video/')) {
+                contentHtml += `<video controls src="${m.fileData}" class="media-preview"></video>`;
             } else {
                 contentHtml += `<br><a href="${m.fileData}" download="${m.fileName || 'fichier'}" style="color:#8be9fd;">📁 Fichier : ${m.fileName || 'Télécharger'}</a>`;
             }
