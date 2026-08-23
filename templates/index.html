@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AOO1 V5.2 ULTIME — App de Chat & P2P</title>
+    <title>AOO1 V1.6 — 50 Titres, Anti-Spam & Vérification Humaine</title>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', 'Segoe UI', sans-serif; }
 
         body {
-            background: linear-gradient(rgba(10, 10, 20, 0.82), rgba(20, 5, 15, 0.88)), 
+            background: linear-gradient(rgba(10, 10, 20, 0.88), rgba(20, 5, 15, 0.92)), 
                         url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1920&auto=format&fit=crop') no-repeat center center fixed;
             background-size: cover;
             color: #fff;
@@ -32,31 +33,28 @@
 
         .main-app {
             width: 98%;
-            max-width: 1420px;
+            max-width: 1440px;
             height: 95vh;
-            height: 95dvh;
             display: flex;
             gap: 15px;
             padding: 12px;
             position: relative;
         }
 
-        /* SIDEBAR */
         .sidebar {
-            width: 380px;
+            width: 360px;
             min-width: 300px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
             padding: 15px;
             overflow-y: auto;
-            transition: all 0.3s ease;
             z-index: 10;
         }
 
         .avatar-container {
-            width: 85px;
-            height: 85px;
+            width: 75px;
+            height: 75px;
             border-radius: 50%;
             border: 2px solid #ff79c6;
             margin: 0 auto;
@@ -65,7 +63,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 32px;
+            font-size: 28px;
             font-weight: bold;
             color: #ff79c6;
             cursor: pointer;
@@ -73,16 +71,27 @@
         }
         .avatar-container img { width: 100%; height: 100%; object-fit: cover; }
 
-        input, select, button {
+        .stats-bar {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,121,198,0.3);
+            border-radius: 10px;
+            padding: 8px;
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+        }
+        .stat-val { color: #50fa7b; font-weight: bold; font-size: 14px; }
+        .stat-lbl { font-size: 10px; color: #aaa; }
+
+        input, select, textarea, button {
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.2);
             padding: 8px 12px;
             border-radius: 8px;
             color: #fff;
             outline: none;
-            font-size: 13px;
+            font-size: 12px;
         }
-        input::placeholder { color: rgba(255, 255, 255, 0.5); }
         select option { background: #1a1a2e; color: #fff; }
 
         button {
@@ -91,16 +100,41 @@
             font-weight: bold;
             border: none;
             cursor: pointer;
-            transition: 0.3s;
+            transition: 0.2s;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 5px;
+        }
+        button:hover { transform: translateY(-2px); filter: brightness(1.1); }
+
+        .user-card {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-top: 4px;
+        }
+
+        .salons-nav {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 8px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+        .salon-btn {
+            padding: 6px 12px;
+            font-size: 11px;
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.1);
             white-space: nowrap;
         }
-        button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255, 121, 198, 0.4); }
+        .salon-btn.active { background: #ff79c6; color: #000; }
 
-        /* CHAT CONTAINER */
         .chat-container {
             flex: 1;
             display: flex;
@@ -116,31 +150,6 @@
             align-items: center;
             padding-bottom: 10px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            gap: 10px;
-        }
-
-        .header-user-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex: 1;
-            overflow: hidden;
-        }
-
-        .target-avatar-header {
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            border: 1px solid #ff79c6;
-            object-fit: cover;
-            background: rgba(255, 255, 255, 0.1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            color: #ff79c6;
-            font-size: 18px;
-            flex-shrink: 0;
         }
 
         .messages-area {
@@ -153,7 +162,7 @@
         }
 
         .msg-bubble {
-            max-width: 75%;
+            max-width: 80%;
             padding: 10px 14px;
             border-radius: 14px;
             font-size: 13px;
@@ -167,38 +176,38 @@
             font-weight: bold;
             color: #ff79c6;
             margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .user-title-badge {
+            background: #bd93f9;
+            color: #000;
+            padding: 1px 5px;
+            border-radius: 4px;
+            font-size: 9px;
         }
         .msg-bubble.local {
             align-self: flex-end;
             background: rgba(255, 121, 198, 0.25);
             border: 1px solid rgba(255, 121, 198, 0.4);
-            border-bottom-right-radius: 2px;
         }
         .msg-bubble.remote {
             align-self: flex-start;
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            border-bottom-left-radius: 2px;
-        }
-        .msg-status {
-            font-size: 9px;
-            align-self: flex-end;
-            margin-top: 4px;
-            color: rgba(255, 255, 255, 0.6);
         }
 
         .media-preview { max-width: 100%; max-height: 250px; border-radius: 10px; margin-top: 5px; }
 
-        .user-card {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            margin-top: 6px;
+        .fomo-locked-box {
+            background: rgba(255, 85, 85, 0.15);
+            border: 1px dashed #ff5555;
+            padding: 14px;
+            border-radius: 10px;
+            text-align: left;
+            margin: 5px 0;
         }
-        .user-avatar-mini { width: 35px; height: 35px; min-width: 35px; border-radius: 50%; object-fit: cover; border: 1px solid #ff79c6; }
 
         .input-bar {
             display: flex;
@@ -208,8 +217,7 @@
             align-items: center;
         }
 
-        /* MODAL GUIDE */
-        .modal-guide {
+        .modal {
             display: none;
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -218,61 +226,43 @@
             z-index: 100;
             padding: 25px;
             overflow-y: auto;
-            border-radius: 16px;
+        }
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+        .shop-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
         }
 
-        .mobile-btn { display: none; }
+        .rec-btn { background: #ff5555; color: #fff; }
+        .rec-btn.recording { animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
-        /* REGLES RESPONSIVE ADAPTATIVE */
-        @media (max-width: 900px) {
-            .main-app { 
-                flex-direction: column; 
-                height: 100vh; 
-                height: 100dvh; 
-                width: 100%; 
-                padding: 0; 
-                border-radius: 0;
-            }
-            .glass-panel { border-radius: 0; border: none; }
-            .sidebar {
-                position: absolute;
-                top: 0; 
-                left: -100%; 
-                width: 85%; 
-                max-width: 320px;
-                height: 100%; 
-                background: rgba(15, 10, 20, 0.98);
-                box-shadow: 5px 0 25px rgba(0,0,0,0.5);
-                transition: left 0.3s ease-in-out;
-            }
-            .sidebar.active { left: 0; }
-            .mobile-btn { display: inline-flex !important; }
-            .chat-container { height: 100%; border-radius: 0; }
-            .msg-bubble { max-width: 85%; }
+        .guide-box {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,121,198,0.2);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 15px;
+            font-size: 12px;
+            line-height: 1.5;
         }
 
-        /* Ajustement sur très petits écrans */
-        @media (max-width: 400px) {
-            .profile-inputs-row {
-                flex-wrap: wrap;
-            }
-            .profile-inputs-row input, 
-            .profile-inputs-row select {
-                flex: 1 1 100% !important;
-            }
-            .input-bar {
-                gap: 4px;
-            }
-            .input-bar input {
-                min-width: 0;
-            }
-        }
-
-        /* Support orientation paysage mobile */
-        @media (max-height: 500px) and (orientation: landscape) {
-            .main-app { height: 100vh; }
-            .avatar-container { width: 50px; height: 50px; font-size: 20px; }
-            #videoGrid video#remoteVideo { max-height: 120px; }
+        .fomo-form {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 5px;
         }
     </style>
 </head>
@@ -280,134 +270,154 @@
 
 <div class="main-app">
     <!-- Sidebar -->
-    <div class="sidebar glass-panel" id="sidebar">
-        <div style="text-align: center; position: relative;">
-            <button onclick="toggleSidebar()" class="mobile-btn" style="position: absolute; top: 0; right: 0; background: transparent; color: #ff79c6; font-size: 16px; padding: 4px 8px;">✕</button>
-            
+    <div class="sidebar glass-panel">
+        <div style="text-align: center;">
             <div class="avatar-container" onclick="document.getElementById('photoInput').click()">
                 <span id="avatarText">?</span>
                 <img id="avatarImg" src="" style="display:none;">
             </div>
             <input type="file" id="photoInput" accept="image/*" style="display:none;" onchange="loadPhoto(this)">
-            
-            <h4 id="myIdTag" style="margin-top: 6px; color: #ff79c6;">ID: ------</h4>
-            <button onclick="newID()" style="padding: 4px 10px; font-size: 11px; margin-top:4px;">
-                🔄 <span>Nouveau ID</span>
-            </button>
+            <h4 id="myIdTag" style="margin-top:4px; color:#ff79c6;">ID: ------</h4>
         </div>
 
-        <!-- Profil -->
-        <div style="display:flex; flex-direction:column; gap:6px;">
-            <input type="text" id="myPseudo" value="" placeholder="Mon Pseudo" oninput="syncProfile()">
-            <div class="profile-inputs-row" style="display:flex; gap:4px;">
-                <input type="number" id="myAge" value="" placeholder="Âge" style="width:65px;" oninput="syncProfile()">
-                <select id="mySexe" onchange="syncProfile()" style="flex:1;">
-                    <option value="Mâle">Mâle</option>
-                    <option value="Femelle">Femelle</option>
-                </select>
-                <select id="myPays" onchange="syncProfile()" style="flex:1.2;">
-                    <option value="" disabled selected>Pays</option>
-                    <option value="Mali">Mali</option>
-                    <option value="France">France</option>
-                    <option value="Sénégal">Sénégal</option>
-                    <option value="Côte d'Ivoire">Côte d'Ivoire</option>
-                    <option value="Burkina Faso">Burkina Faso</option>
-                    <option value="Cameroun">Cameroun</option>
-                    <option value="Canada">Canada</option>
-                    <option value="Maroc">Maroc</option>
-                    <option value="Algérie">Algérie</option>
-                    <option value="Belgique">Belgique</option>
-                    <option value="Autre">Autre</option>
-                </select>
+        <!-- Dashboard Dette / XP -->
+        <div class="stats-bar">
+            <div>
+                <div class="stat-val" id="myXP">0</div>
+                <div class="stat-lbl">Points XP 💎</div>
             </div>
-            <button onclick="saveProfileLocal()" style="background:#50fa7b; color:#000;">💾 Enregistrer Profil</button>
+            <div>
+                <div class="stat-val" id="myDebt" style="color:#ff5555;">0</div>
+                <div class="stat-lbl">Dette Cumulée 💳</div>
+            </div>
         </div>
 
-        <button onclick="toggleGuide()" style="background: rgba(255,255,255,0.1); color:#fff; border:1px solid #ff79c6;">📖 Guide de l'application</button>
+        <!-- Registre Dette -->
+        <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius:8px; padding:8px; font-size:10px;">
+            <b>🧾 Registre de Dette :</b>
+            <div id="debtDetailsBox" style="color:#aaa; margin-top:4px; max-height:50px; overflow-y:auto;">Aucune dette active.</div>
+        </div>
+
+        <!-- Profil Miroir -->
+        <div style="background: rgba(255,255,255,0.03); padding:8px; border-radius:8px; font-size:11px;">
+            <b>🧠 Profil Miroir (Analyse) :</b>
+            <div id="psychProfile" style="color:#bd93f9; margin-top:2px;">Calme & Analytique</div>
+        </div>
+
+        <!-- Form Profil -->
+        <input type="text" id="myPseudo" placeholder="Mon Pseudo" oninput="syncProfile()">
+        
+        <div style="display:flex; gap:4px;">
+            <input type="number" id="myAge" placeholder="Âge" style="width:65px;" oninput="syncProfile()">
+            <select id="mySexe" onchange="syncProfile()" style="flex:1;">
+                <option value="Mâle">Mâle</option>
+                <option value="Femelle">Femelle</option>
+            </select>
+            <select id="myPays" onchange="syncProfile()" style="flex:1.2;">
+                <option value="Mali">Mali</option>
+                <option value="France">France</option>
+                <option value="Sénégal">Sénégal</option>
+                <option value="Côte d'Ivoire">Côte d'Ivoire</option>
+                <option value="Autre">Autre</option>
+            </select>
+        </div>
+
+        <div style="display:flex; gap:4px;">
+            <select id="myTitleSelect" onchange="syncProfile()" style="flex:1;">
+                <option value="Novice Niv.1">Titre: Novice Niv.1 (Niv.1)</option>
+            </select>
+        </div>
+
+        <button onclick="openShop()" style="background:#50fa7b; color:#000;">🛍️ Boutique (50 Titres & Salons)</button>
+        <button onclick="openGuide()" style="background:#bd93f9; color:#000; margin-top:4px;">📜 Règles du Jeu & Guide</button>
 
         <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1);">
 
-        <!-- Utilisateurs en Ligne -->
-        <div>
-            <h5>En Ligne (<span id="countOnline">0</span>)</h5>
-            <input type="text" id="searchInput" placeholder="🔍 Rechercher..." onkeyup="filterUsers()" style="width:100%; margin-top:4px;">
-            <div id="usersList" style="margin-top:6px;"></div>
-        </div>
+        <h5 style="font-size:11px; color:#8be9fd;">👥 PAIRS EN LIGNE (P2P)</h5>
+        <div id="peersBox" style="max-height: 120px; overflow-y: auto;"></div>
 
-        <!-- Contacts Enregistrés -->
-        <div>
-            <h5>Mes Contacts Enregistrés</h5>
-            <div id="savedContactsList" style="margin-top:6px;"></div>
+        <div style="margin-top:auto;">
+            <label style="font-size:10px;">🔊 Volume Notifications :</label>
+            <input type="range" id="volControl" min="0" max="0.3" step="0.01" value="0.05" style="width:100%;" onchange="updateVolume()">
         </div>
     </div>
 
-    <!-- Zone Chat -->
+    <!-- Container Chat Principal -->
     <div class="chat-container glass-panel">
+        <div class="salons-nav" id="salonsNavBox">
+            <button class="salon-btn active" id="btn_main" onclick="switchSalon('main')">🌐 Général</button>
+            <button class="salon-btn" id="btn_fomo" onclick="switchSalon('fomo')">📢 Annonces (FOMO)</button>
+            <button class="salon-btn" id="btn_talk" onclick="switchSalon('talk')">💬 Discussion & Dette</button>
+        </div>
+
         <div class="chat-header">
-            <button class="mobile-btn" onclick="toggleSidebar()">☰ Menu</button>
-            
-            <div class="header-user-info">
-                <div class="target-avatar-header" id="targetAvatarBox">?</div>
-                <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                    <h3 id="targetName" style="font-size: 16px;">Choisissez un ami</h3>
-                    <small id="targetDetails" style="color:rgba(255,255,255,0.6); font-size: 11px;">Aucune session active</small>
-                </div>
+            <div>
+                <h3 id="currentSalonTitle">🌐 Zone Principale</h3>
+                <small id="salonSub" style="color:rgba(255,255,255,0.6); font-size:11px;">Espace d'échange P2P global</small>
             </div>
-
-            <div style="display:flex; gap:6px;">
-                <button id="camToggleBtn" onclick="toggleCamera()" style="display:none; background:#ffb86c; color:#000; font-size: 11px; padding: 6px 10px;">📷 Cam</button>
-                <button id="endCallBtn" onclick="endCall()" style="display:none; background:#ff5555; color:#fff; font-size: 11px; padding: 6px 10px;">🔴 Fin</button>
-                <button id="startCallBtn" onclick="startCall()" style="font-size: 11px; padding: 6px 10px;">🎥 Vidéo</button>
-            </div>
+            <span id="typingNotice" style="font-size:10px; color:#50fa7b; font-style:italic;"></span>
         </div>
 
-        <!-- Ecran Appel Vidéo -->
-        <div id="videoGrid" style="display:none; position:relative; margin-top:10px;">
-            <video id="remoteVideo" autoplay style="width:100%; max-height:220px; border-radius:10px; background:#000; object-fit: cover;"></video>
-            <video id="localVideo" autoplay muted style="width:90px; height:65px; position:absolute; right:10px; bottom:10px; border-radius:8px; border:1px solid #ff79c6; object-fit: cover;"></video>
+        <div class="messages-area" id="msgBox"></div>
+
+        <!-- Formulaire Annonce Dédié quand on est dans le salon FOMO -->
+        <div id="fomoInputContainer" class="fomo-form" style="display:none;">
+            <b style="color:#ff79c6; font-size:11px;">📢 NOUVELLE ANNONCE SECRÈTE (-15 XP)</b>
+            <input type="text" id="fomoTitle" placeholder="Titre de l'annonce...">
+            <input type="text" id="fomoSummary" placeholder="Résumé / Aperçu public de l'annonce...">
+            <textarea id="fomoSecret" placeholder="Le secret ou le contenu masqué..." rows="2"></textarea>
+            <button onclick="sendFomoAnnouncement()" style="background:#50fa7b; color:#000;">Publier l'Annonce (Vérification Humaine)</button>
         </div>
 
-        <!-- Zone Messages -->
-        <div class="messages-area" id="msgBox">
-            <div class="msg-bubble remote">
-                <span class="msg-sender-name">Système AOO1</span>
-                🌸 Bienvenue sur AOO1 V5.2 ULTIME. Vos conversations sont prêtes.
-            </div>
-        </div>
-
-        <!-- Barre de Saisie -->
-        <div class="input-bar">
-            <button id="vocalBtn" onclick="toggleVocal()" style="padding: 8px 12px;">🎙️</button>
-            <label style="cursor:pointer; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); padding: 8px 10px; border-radius: 8px;" title="Envoyer Image / Vidéo / Audio">
-                📁 <input type="file" id="mediaInput" accept="image/*,video/*,audio/*" style="display:none" onchange="sendMedia()">
+        <!-- Barre d'envoi standard -->
+        <div class="input-bar" id="standardInputContainer">
+            <button type="button" id="micBtn" class="rec-btn" onclick="toggleRecord()">🎤</button>
+            <label style="cursor:pointer; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); padding: 8px 10px; border-radius: 8px;" title="Envoyer Fichier / Media">
+                📎 <input type="file" id="fileAttach" style="display:none" onchange="sendFile(this)">
             </label>
-            <input type="text" id="chatInput" placeholder="Votre message..." style="flex:1;" onkeypress="if(event.key==='Enter') sendText()">
-            <button onclick="sendText()">Envoyer</button>
+            <input type="text" id="chatInput" placeholder="Tapez votre message..." style="flex:1;" oninput="handleTyping()" onkeypress="if(event.key==='Enter') sendCurrentMsg()">
+            <button onclick="sendCurrentMsg()">Envoyer (+1 XP)</button>
         </div>
     </div>
 
-    <!-- GUIDE DETAILLÉ -->
-    <div class="modal-guide" id="guideModal">
-        <h2 style="color:#ff79c6; font-size: 20px;">📖 Guide Complet & Détaillé de AOO1 V5.2</h2>
+    <!-- Boutique Modal (50 Titres) -->
+    <div class="modal" id="shopModal">
+        <h2 style="color:#ff79c6;">🛍️ Boutique des 50 Titres d'Autorité & Salons</h2>
+        <p style="font-size:12px; margin-top:4px;">Montez les échelons d'autorité (Niveau 1 à 50) pour débloquer le réseau.</p>
+        
+        <div class="shop-card" style="border: 1px solid #ff79c6; margin-top:10px;">
+            <h4 style="color:#ff79c6;">➕ Créer un Salon Privé</h4>
+            <p style="font-size:10px; color:#aaa; margin:5px 0;">Coût : 30 XP. Fixez le niveau d'autorité minimal requis.</p>
+            <div style="display:flex; gap:5px;">
+                <input type="text" id="newSalonName" placeholder="Nom du salon" style="flex:1;">
+                <input type="number" id="newSalonMinLevel" placeholder="Niv. requis (1-50)" min="1" max="50" style="width:120px;">
+                <button onclick="createCustomSalon()" style="background:#ff79c6;">Créer (30 XP)</button>
+            </div>
+        </div>
+
+        <div class="shop-grid" id="shopTitlesGrid"></div>
+
+        <button onclick="closeShop()" style="margin-top:20px; background:#ff5555; color:#fff;">Fermer</button>
+    </div>
+
+    <!-- Modal Guide -->
+    <div class="modal" id="guideModal">
+        <h2 style="color:#50fa7b;">📜 Guide Officiel & Règles du Système AOO1</h2>
         <br>
-        <p><b>1. Rôle des Messages & Architecture Hybride :</b></p>
-        <p>AOO1 V5.2 combine deux technologies pour une sécurité et une rapidité optimales :</p>
-        <ul>
-            <li>• <b>Messages Textes & Vocaux :</b> Relayés par le serveur Python via WebSocket (Flask-SocketIO).</li>
-            <li>• <b>Fichiers Lourds & Appels Vidéo :</b> Transmis directement d'appareil à appareil via liaison Direct-P2P (WebRTC).</li>
-        </ul>
-        <br>
-        <p><b>2. Fonctionnalités de la Sidebar :</b></p>
-        <ul>
-            <li>• <b>Nouveau ID (🔄) :</b> Génère un nouvel identifiant unique aléatoire.</li>
-            <li>• <b>Profil Utilisateur :</b> Entrez votre Pseudo, Âge, Sexe, Pays et Photo de profil, puis cliquez sur "Enregistrer Profil".</li>
-            <li>• <b>Gestion des Contacts :</b> 
-                <br>- Cliquez sur 🚫 pour <b>Bloquer</b> un contact.
-                <br>- Cliquez sur 🗑️ pour <b>Supprimer</b> définitivement un contact.
-            </li>
-        </ul>
-        <br>
-        <button onclick="toggleGuide()" style="margin-top:15px; background:#ff79c6; color:#000;">Fermer le Guide</button>
+        <div class="guide-box">
+            <h4 style="color:#ff79c6;">1. 💎 Hiérarchie et 50 Titres d'Autorité</h4>
+            <p>• Les titres s'échelonnent du <b>Niveau 1 au Niveau 50</b>.</p>
+            <p>• Plus votre niveau d'autorité est élevé, plus vous avez accès à des salons privés restreints.</p>
+        </div>
+
+        <div class="guide-box">
+            <h4 style="color:#ff79c6;">2. 📢 Annonces FOMO & Protection Anti-Spam</h4>
+            <p>• Publier une annonce masquée coûte <b>15 XP</b>. Vous devez fournir un Titre, un Aperçu et le Secret.</p>
+            <p>• Votre nom est <b>explicitement affiché</b> pour empêcher les fausses annonces anonymes.</p>
+            <p>• <b>Anti-Spam & Vérification Humaine :</b> Une question de sécurité s'affiche avant chaque envoi ou déverrouillage pour stopper les bots !</p>
+        </div>
+
+        <button onclick="closeGuide()" style="margin-top:10px; background:#ff79c6; color:#000;">Compris !</button>
     </div>
 </div>
 
@@ -416,20 +426,56 @@
     let myPeerId = localStorage.getItem('aoo1_id') || Math.floor(10000000 + Math.random() * 90000000).toString();
     localStorage.setItem('aoo1_id', myPeerId);
 
-    let myPhoto = localStorage.getItem('aoo1_photo') || '';
-    let activeTargetId = null;
-    let allUsers = [];
-    let blockedContacts = JSON.parse(localStorage.getItem('aoo1_blocked') || '[]');
-    let localStream = null;
-    let isCamOn = true;
+    // SYSTEME DE 50 TITRES D'AUTORITÉ
+    const ALL_TITLES = Array.from({ length: 50 }, (_, i) => {
+        const lvl = i + 1;
+        const names = [
+            "Novice", "Initié", "Chercheur", "Éclaireur", "Sentinelle", 
+            "Garde", "Agent", "Cryptographe", "Ombre", "Spectre",
+            "Opérateur", "Analyste", "Stratège", "Infiltrateur", "Vanguard",
+            "Capitaine", "Commandant", "Exécuteur", "Maître", "Grand Maître",
+            "Oracle", "Archiviste", "Gardiens des Clés", "Cyber-Vigilant", "Architecte",
+            "Seigneur", "Baron du Code", "Comte Virtuel", "Duc du Réseau", "Souverain",
+            "Légendaire", "Mythique", "Transcendant", "Éternel", "Invincible",
+            "Titan", "Colosse", "Dominateur", "Maître du Jeu", "Grand Concepteur",
+            "Fondateur", "Imperator", "Oméga", "Alpha", "Suprême",
+            "Monolithe", "Absolu", "Dieu du Réseau", "Entité Suprême", "Monarque Absolu"
+        ];
+        return {
+            name: `${names[i]} Niv.${lvl}`,
+            level: lvl,
+            price: lvl === 1 ? 0 : Math.floor(15 * Math.pow(1.18, lvl))
+        };
+    });
 
-    // STOCKAGE LOCALSTORAGE DES DISCUSSIONS SÉPARÉES
-    let chatHistories = JSON.parse(localStorage.getItem('aoo1_chats') || '{}');
+    // ETAT DU SYSTEME
+    let myXP = parseInt(localStorage.getItem('aoo1_xp') || '50');
+    let myDebt = parseInt(localStorage.getItem('aoo1_debt') || '0');
+    let debtRegistry = JSON.parse(localStorage.getItem('aoo1_debt_registry') || '{}');
+    let myPhoto = localStorage.getItem('aoo1_photo') || '';
+    let currentSalon = 'main';
+    let activeTarget = 'main';
+    let lastMsgTime = 0; // Anti-spam cooldown
+
+    let myTitles = JSON.parse(localStorage.getItem('aoo1_titles') || '["Novice Niv.1"]');
+    let activeTitle = localStorage.getItem('aoo1_active_title') || 'Novice Niv.1';
+
+    let customSalons = JSON.parse(localStorage.getItem('aoo1_custom_salons') || '[]');
+
+    let peerConnections = {};
+    let onlinePeersData = {};
+    let isRecording = false, mediaRecorder, audioChunks = [];
+    let typingTimeout;
 
     const notifSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+    notifSound.volume = 0.05;
+    let typingStart = 0;
 
     document.getElementById('myIdTag').innerText = "ID: " + myPeerId;
-    if("Notification" in window) Notification.requestPermission();
+    updateStatsUI();
+    renderTitlesDropdown();
+    renderShopGrid();
+    renderSalonsNav();
 
     if(myPhoto) {
         document.getElementById('avatarImg').src = myPhoto;
@@ -442,49 +488,464 @@
     if(localStorage.getItem('aoo1_sexe')) document.getElementById('mySexe').value = localStorage.getItem('aoo1_sexe');
     if(localStorage.getItem('aoo1_pays')) document.getElementById('myPays').value = localStorage.getItem('aoo1_pays');
 
-    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); }
-    function toggleGuide() { 
-        const g = document.getElementById('guideModal');
-        g.style.display = (g.style.display === 'block') ? 'none' : 'block';
+    // WEBRTC INIT
+    const peer = new Peer(myPeerId);
+    peer.on('open', (id) => { syncProfile(); });
+    peer.on('connection', (conn) => { registerConnection(conn); });
+
+    function registerConnection(conn) {
+        peerConnections[conn.peer] = conn;
+        conn.on('data', (data) => { handleIncomingData(data, conn.peer); });
+        conn.on('close', () => { delete peerConnections[conn.peer]; renderPeersList(); });
+    }
+
+    function connectToPeer(targetId) {
+        if (targetId === myPeerId || peerConnections[targetId]) return;
+        const conn = peer.connect(targetId);
+        registerConnection(conn);
+    }
+
+    // VÉRIFICATION HUMAINE (ANTI-BOT)
+    function verifyHumanity() {
+        const n1 = Math.floor(Math.random() * 9) + 1;
+        const n2 = Math.floor(Math.random() * 9) + 1;
+        const ans = prompt(`🛡️ VÉRIFICATION HUMAINE (Anti-Spam) :\nCombien font ${n1} + ${n2} ?`);
+        return parseInt(ans) === (n1 + n2);
+    }
+
+    // RECEPTION ET GESTION DATA
+    function handleIncomingData(data, senderId) {
+        if (data.type === 'typing') {
+            if (activeTarget === senderId || activeTarget === currentSalon) {
+                document.getElementById('typingNotice').innerText = `${data.pseudo} écrit...`;
+                clearTimeout(typingTimeout);
+                typingTimeout = setTimeout(() => { document.getElementById('typingNotice').innerText = ''; }, 2000);
+            }
+            return;
+        }
+
+        notifSound.play().catch(()=>{});
+
+        if (data.type === 'fomo_announcement') {
+            displayFomoCard(data);
+        } else if (data.type === 'debt_transfer') {
+            myXP += data.amount;
+            updateStatsUI();
+            alert(`🔥 Un pair a consulté ton annonce ! Tu reçois +${data.amount} XP !`);
+        } else if (data.type === 'pay_debt_step') {
+            myXP += data.amount;
+            updateStatsUI();
+        } else {
+            displayMsg({
+                sender: data.pseudo,
+                title: data.title,
+                text: data.text,
+                fileData: data.fileData,
+                fileName: data.fileName,
+                fileType: data.fileType,
+                isLocal: false,
+                hesitation: data.hesitation
+            });
+        }
+    }
+
+    function broadcastP2P(payload) {
+        if (activeTarget !== 'main' && activeTarget !== 'fomo' && activeTarget !== 'talk' && !activeTarget.startsWith('custom_')) {
+            if (peerConnections[activeTarget] && peerConnections[activeTarget].open) {
+                peerConnections[activeTarget].send(payload);
+            }
+        } else {
+            Object.values(peerConnections).forEach(conn => {
+                if (conn.open) conn.send(payload);
+            });
+        }
+    }
+
+    // ENVOI ANNONCE ET MESSAGES
+    document.getElementById('chatInput').addEventListener('keydown', () => {
+        if(!typingStart) typingStart = Date.now();
+    });
+
+    function getHesitationLevel() {
+        if(!typingStart) return "Direct ⚡";
+        let duration = (Date.now() - typingStart) / 1000;
+        typingStart = 0;
+        if(duration > 5) return "Très Hésitant 😰";
+        if(duration > 2) return "Calculateur 🤔";
+        return "Impulsif ⚡";
+    }
+
+    function handleTyping() {
+        const myPseudo = document.getElementById('myPseudo').value.trim() || 'Anonyme';
+        broadcastP2P({ type: 'typing', pseudo: myPseudo });
+    }
+
+    function sendCurrentMsg() {
+        const now = Date.now();
+        if(now - lastMsgTime < 1500) {
+            alert("⚠️ ANTI-SPAM : Ralentis le rythme ! Attends une seconde.");
+            return;
+        }
+
+        const input = document.getElementById('chatInput');
+        const txt = input.value.trim();
+        if(!txt) return;
+
+        if(!hasAccessToSalon(currentSalon)) {
+            alert("🔒 Votre niveau d'autorité ne vous permet pas de poster ici !");
+            return;
+        }
+
+        lastMsgTime = now;
+        myXP += 1;
+
+        if(currentSalon === 'talk' && myDebt > 0) {
+            let creditors = Object.keys(debtRegistry);
+            if(creditors.length > 0) {
+                let targetCreditor = creditors[0];
+                let payAmt = Math.min(5, debtRegistry[targetCreditor]);
+                debtRegistry[targetCreditor] -= payAmt;
+                myDebt -= payAmt;
+                if(debtRegistry[targetCreditor] <= 0) delete debtRegistry[targetCreditor];
+
+                if(peerConnections[targetCreditor] && peerConnections[targetCreditor].open) {
+                    peerConnections[targetCreditor].send({ type: 'pay_debt_step', amount: payAmt });
+                }
+            }
+        }
+
+        updateStatsUI();
+        const myName = document.getElementById('myPseudo').value.trim() || 'Anonyme';
+        const hesitation = getHesitationLevel();
+
+        const payload = {
+            type: 'chat',
+            pseudo: myName,
+            title: activeTitle,
+            text: txt,
+            sender_id: myPeerId,
+            hesitation: hesitation
+        };
+
+        broadcastP2P(payload);
+        socket.emit('send_chat_message', payload);
+        displayMsg({ sender: myName, title: activeTitle, text: txt, isLocal: true, hesitation: hesitation });
+        input.value = '';
+    }
+
+    function sendFomoAnnouncement() {
+        const now = Date.now();
+        if(now - lastMsgTime < 3000) return alert("⚠️ ANTI-SPAM : Patientez avant de publier une autre annonce.");
+
+        const title = document.getElementById('fomoTitle').value.trim();
+        const summary = document.getElementById('fomoSummary').value.trim();
+        const secret = document.getElementById('fomoSecret').value.trim();
+
+        if(!title || !summary || !secret) return alert("Veuillez remplir tous les champs de l'annonce !");
+        if(myXP < 15) return alert("Il vous faut au moins 15 XP pour publier !");
+
+        if(!verifyHumanity()) return alert("❌ Vérification humaine échouée !");
+
+        lastMsgTime = now;
+        myXP -= 15;
+        updateStatsUI();
+
+        const myName = document.getElementById('myPseudo').value.trim() || 'Anonyme';
+        const payload = {
+            type: 'fomo_announcement',
+            pseudo: myName,
+            title: activeTitle,
+            announcementTitle: title,
+            summary: summary,
+            secret: secret,
+            sender_id: myPeerId
+        };
+
+        broadcastP2P(payload);
+        socket.emit('send_chat_message', payload);
+        displayFomoCard(payload);
+
+        document.getElementById('fomoTitle').value = '';
+        document.getElementById('fomoSummary').value = '';
+        document.getElementById('fomoSecret').value = '';
+    }
+
+    // RÉVÉLATION ET DETTES
+    function displayFomoCard(d) {
+        const b = document.getElementById('msgBox');
+        const cardId = 'fomo_' + Date.now() + Math.floor(Math.random()*100);
+        
+        b.innerHTML += `
+            <div class="fomo-locked-box" id="${cardId}">
+                <div style="font-size:10px; color:#ff79c6; font-weight:bold;">📢 ANNONCE PAR : ${d.pseudo} (${d.title || 'Novice'})</div>
+                <h3 style="color:#50fa7b; margin:4px 0;">${d.announcementTitle}</h3>
+                <p style="font-size:12px; color:#eee; margin-bottom:6px;"><b>Aperçu :</b> ${d.summary}</p>
+                <div style="font-size:10px; color:#aaa; margin-bottom:8px;">Coût de déverrouillage : 15 XP de Dette</div>
+                <button onclick="unlockFomo('${cardId}', '${encodeURIComponent(d.secret)}', '${d.sender_id}')">🔓 Révéler l'Info Secrète (+15 Dette)</button>
+            </div>`;
+        b.scrollTop = b.scrollHeight;
+    }
+
+    function unlockFomo(cardId, encodedSecret, authorId) {
+        const secretText = decodeURIComponent(encodedSecret);
+
+        if(authorId === myPeerId) {
+            document.getElementById(cardId).innerHTML += `<div style="background:rgba(0,0,0,0.4); padding:8px; border-radius:6px; margin-top:6px; color:#50fa7b;"><b>CONTENU SECRET :</b><br>${secretText}</div>`;
+            return;
+        }
+
+        if(!verifyHumanity()) return alert("❌ Vérification humaine échouée !");
+
+        myDebt += 15;
+        debtRegistry[authorId] = (debtRegistry[authorId] || 0) + 15;
+        updateStatsUI();
+        
+        if (peerConnections[authorId] && peerConnections[authorId].open) {
+            peerConnections[authorId].send({ type: 'debt_transfer', amount: 15 });
+        }
+
+        document.getElementById(cardId).innerHTML += `<div style="background:rgba(0,0,0,0.4); padding:8px; border-radius:6px; margin-top:6px; color:#50fa7b;"><b>CONTENU SECRET :</b><br>${secretText}</div>`;
+    }
+
+    // AFFICHAGE DES MESSAGES
+    function displayMsg(m) {
+        const b = document.getElementById('msgBox');
+        const bubbleType = m.isLocal ? 'local' : 'remote';
+        let contentHtml = '';
+
+        if(m.text) contentHtml += `<div>${m.text}</div>`;
+
+        if(m.fileData) {
+            if(m.fileType && m.fileType.startsWith('image/')) {
+                contentHtml += `<img src="${m.fileData}" class="media-preview">`;
+            } else if(m.fileType && m.fileType.startsWith('audio/')) {
+                contentHtml += `<audio controls src="${m.fileData}" style="width:100%; height:32px; margin-top:4px;"></audio>`;
+            } else {
+                contentHtml += `<br><a href="${m.fileData}" download="${m.fileName || 'fichier'}" style="color:#8be9fd;">📁 Fichier : ${m.fileName || 'Télécharger'}</a>`;
+            }
+        }
+
+        b.innerHTML += `
+            <div class="msg-bubble ${bubbleType}">
+                <span class="msg-sender-name">
+                    ${m.sender} <span class="user-title-badge">${m.title || 'Novice'}</span>
+                    <small style="color:#aaa; font-size:8px;">(${m.hesitation || 'Direct'})</small>
+                </span>
+                ${contentHtml}
+            </div>`;
+        b.scrollTop = b.scrollHeight;
+    }
+
+    function sendFile(elem) {
+        const file = elem.files[0];
+        if (!file || !hasAccessToSalon(currentSalon)) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const myName = document.getElementById('myPseudo').value.trim() || 'Anonyme';
+            const payload = {
+                type: 'chat',
+                fileData: e.target.result,
+                fileName: file.name,
+                fileType: file.type,
+                pseudo: myName,
+                title: activeTitle
+            };
+            myXP += 1;
+            updateStatsUI();
+            broadcastP2P(payload);
+            displayMsg({ sender: myName, title: activeTitle, fileName: file.name, fileType: file.type, fileData: e.target.result, isLocal: true });
+            elem.value = '';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    async function toggleRecord() {
+        const btn = document.getElementById('micBtn');
+        if (!isRecording) {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const myName = document.getElementById('myPseudo').value.trim() || 'Anonyme';
+                        const payload = { type: 'chat', fileData: reader.result, fileType: 'audio/webm', pseudo: myName, title: activeTitle };
+                        myXP += 1;
+                        updateStatsUI();
+                        broadcastP2P(payload);
+                        displayMsg({ sender: myName, title: activeTitle, fileData: reader.result, fileType: 'audio/webm', isLocal: true });
+                    };
+                    reader.readAsDataURL(blob);
+                };
+                mediaRecorder.start();
+                isRecording = true;
+                btn.classList.add('recording');
+            } catch (err) { alert("Accès micro refusé !"); }
+        } else {
+            mediaRecorder.stop();
+            isRecording = false;
+            btn.classList.remove('recording');
+        }
+    }
+
+    // MISE A JOUR STATS ET PROFIL
+    function updateStatsUI() {
+        document.getElementById('myXP').innerText = myXP;
+        document.getElementById('myDebt').innerText = myDebt;
+        localStorage.setItem('aoo1_xp', myXP);
+        localStorage.setItem('aoo1_debt', myDebt);
+        localStorage.setItem('aoo1_debt_registry', JSON.stringify(debtRegistry));
+
+        const debtBox = document.getElementById('debtDetailsBox');
+        if(myDebt <= 0) {
+            debtBox.innerText = "Aucune dette active.";
+        } else {
+            let details = '';
+            for(let id in debtRegistry) {
+                let name = onlinePeersData[id] || id;
+                details += `• ${debtRegistry[id]} XP dûs à ${name}<br>`;
+            }
+            debtBox.innerHTML = details || `${myDebt} XP dûs en tout.`;
+        }
     }
 
     function syncProfile() {
-        const pseudo = document.getElementById('myPseudo').value.trim();
-        const age = document.getElementById('myAge').value.trim();
-        const sexe = document.getElementById('mySexe').value;
-        const pays = document.getElementById('myPays').value;
+        const pseudo = document.getElementById('myPseudo').value.trim() || 'Anonyme';
+        activeTitle = document.getElementById('myTitleSelect').value;
+        localStorage.setItem('aoo1_pseudo', pseudo);
+        localStorage.setItem('aoo1_active_title', activeTitle);
+        document.getElementById('avatarText').innerText = pseudo.charAt(0).toUpperCase();
 
-        if(pseudo) {
-            document.getElementById('avatarText').innerText = pseudo.charAt(0).toUpperCase();
-        } else {
-            document.getElementById('avatarText').innerText = '?';
-        }
+        socket.emit('register', { peer_id: myPeerId, pseudo: pseudo, title: activeTitle });
+    }
 
-        socket.emit('register', {
-            peer_id: myPeerId,
-            pseudo: pseudo || 'Anonyme',
-            age: age || '?',
-            sexe: sexe,
-            pays: pays || 'Non spécifié',
-            photo: myPhoto
+    // SALONS ET ACCES
+    function getTitleLevel(titleName) {
+        const found = ALL_TITLES.find(t => t.name === titleName);
+        return found ? found.level : 1;
+    }
+
+    function hasAccessToSalon(salonId) {
+        if(salonId === 'main' || salonId === 'fomo' || salonId === 'talk') return true;
+        const targetSalon = customSalons.find(s => s.id === salonId);
+        if(!targetSalon) return true;
+        return getTitleLevel(activeTitle) >= (targetSalon.minLevel || 1);
+    }
+
+    function createCustomSalon() {
+        const name = document.getElementById('newSalonName').value.trim();
+        const minLevel = parseInt(document.getElementById('newSalonMinLevel').value || '1');
+
+        if(!name) return alert("Nom invalide !");
+        if(myXP < 30) return alert("XP insuffisants (30 XP requis) !");
+
+        myXP -= 30;
+        updateStatsUI();
+
+        const salonObj = { id: 'custom_' + Date.now(), name: name, minLevel: minLevel };
+        customSalons.push(salonObj);
+        localStorage.setItem('aoo1_custom_salons', JSON.stringify(customSalons));
+
+        renderSalonsNav();
+        closeShop();
+        switchSalon(salonObj.id);
+    }
+
+    function renderSalonsNav() {
+        const box = document.getElementById('salonsNavBox');
+        box.innerHTML = `
+            <button class="salon-btn ${activeTarget==='main'?'active':''}" id="btn_main" onclick="switchSalon('main')">🌐 Général</button>
+            <button class="salon-btn ${activeTarget==='fomo'?'active':''}" id="btn_fomo" onclick="switchSalon('fomo')">📢 FOMO</button>
+            <button class="salon-btn ${activeTarget==='talk'?'active':''}" id="btn_talk" onclick="switchSalon('talk')">💬 Discussion</button>
+        `;
+        customSalons.forEach(s => {
+            box.innerHTML += `<button class="salon-btn ${activeTarget===s.id?'active':''}" id="btn_${s.id}" onclick="switchSalon('${s.id}')">🔒 ${s.name} (Niv.${s.minLevel})</button>`;
         });
     }
 
-    function saveProfileLocal() {
-        localStorage.setItem('aoo1_pseudo', document.getElementById('myPseudo').value);
-        localStorage.setItem('aoo1_age', document.getElementById('myAge').value);
-        localStorage.setItem('aoo1_sexe', document.getElementById('mySexe').value);
-        localStorage.setItem('aoo1_pays', document.getElementById('myPays').value);
-        syncProfile();
-        alert("Profil enregistré et synchronisé avec succès !");
+    function switchSalon(salonId) {
+        currentSalon = salonId;
+        activeTarget = salonId;
+        document.querySelectorAll('.salon-btn').forEach(b => b.classList.remove('active'));
+        const activeBtn = document.getElementById('btn_' + salonId);
+        if(activeBtn) activeBtn.classList.add('active');
+
+        if(salonId === 'fomo') {
+            document.getElementById('fomoInputContainer').style.display = 'flex';
+            document.getElementById('standardInputContainer').style.display = 'none';
+        } else {
+            document.getElementById('fomoInputContainer').style.display = 'none';
+            document.getElementById('standardInputContainer').style.display = 'flex';
+        }
+
+        if(salonId === 'main') {
+            document.getElementById('currentSalonTitle').innerText = "🌐 Zone Principale";
+            document.getElementById('salonSub').innerText = "Espace libre d'échange";
+        } else if(salonId === 'fomo') {
+            document.getElementById('currentSalonTitle').innerText = "📢 Zone Annonces (FOMO)";
+            document.getElementById('salonSub').innerText = "Annonces masquées (-15 XP pour poster, +15 Dette pour lire)";
+        } else if(salonId === 'talk') {
+            document.getElementById('currentSalonTitle').innerText = "💬 Discussion & Remboursement";
+            document.getElementById('salonSub').innerText = "Chaque message ici rembourse 5 XP de votre dette aux pairs !";
+        } else if(salonId.startsWith('custom_')) {
+            const cs = customSalons.find(s => s.id === salonId);
+            document.getElementById('currentSalonTitle').innerText = "🔒 " + (cs ? cs.name : 'Salon Privé');
+            document.getElementById('salonSub').innerText = `Autorité requise : Niveau ${cs ? cs.minLevel : 1}`;
+        } else {
+            document.getElementById('currentSalonTitle').innerText = "💬 PV Direct avec " + (onlinePeersData[salonId] || salonId);
+            document.getElementById('salonSub').innerText = "Canal P2P Privé";
+        }
+        document.getElementById('msgBox').innerHTML = '';
     }
 
-    function newID() {
-        myPeerId = Math.floor(10000000 + Math.random() * 90000000).toString();
-        localStorage.setItem('aoo1_id', myPeerId);
-        document.getElementById('myIdTag').innerText = "ID: " + myPeerId;
-        syncProfile();
+    // BOUTIQUE ET 50 TITRES
+    function renderShopGrid() {
+        const grid = document.getElementById('shopTitlesGrid');
+        grid.innerHTML = '';
+        ALL_TITLES.forEach(t => {
+            const owned = myTitles.includes(t.name);
+            grid.innerHTML += `
+                <div class="shop-card" style="${owned ? 'border: 1px solid #50fa7b;' : ''}">
+                    <h4>${t.name}</h4>
+                    <p style="font-size:10px; color:#aaa; margin:4px 0;">Autorité : Niv.${t.level}</p>
+                    <p style="font-size:11px; color:#ff79c6; margin-bottom:6px;">${t.price === 0 ? 'GRATUIT' : t.price + ' XP'}</p>
+                    <button onclick="buyTitle('${t.name}', ${t.price})" ${owned ? 'disabled style="opacity:0.5; background:#50fa7b;"' : ''}>
+                        ${owned ? 'Possédé' : 'Acheter'}
+                    </button>
+                </div>`;
+        });
     }
+
+    function buyTitle(titleName, price) {
+        if(myTitles.includes(titleName)) return alert("Titre déjà possédé !");
+        if(myXP < price) return alert("Points XP insuffisants !");
+
+        myXP -= price;
+        myTitles.push(titleName);
+        localStorage.setItem('aoo1_titles', JSON.stringify(myTitles));
+        updateStatsUI();
+        renderTitlesDropdown();
+        renderShopGrid();
+        syncProfile();
+        alert(`🎉 Félicitations ! Tu as débloqué le titre d'autorité "${titleName}" !`);
+    }
+
+    function renderTitlesDropdown() {
+        const sel = document.getElementById('myTitleSelect');
+        sel.innerHTML = '';
+        myTitles.forEach(t => {
+            sel.innerHTML += `<option value="${t}" ${t === activeTitle ? 'selected' : ''}>Titre: ${t}</option>`;
+        });
+    }
+
+    function openShop() { document.getElementById('shopModal').style.display = 'block'; }
+    function closeShop() { document.getElementById('shopModal').style.display = 'none'; }
+    function openGuide() { document.getElementById('guideModal').style.display = 'block'; }
+    function closeGuide() { document.getElementById('guideModal').style.display = 'none'; }
 
     function loadPhoto(elem) {
         const file = elem.files[0];
@@ -501,367 +962,33 @@
         reader.readAsDataURL(file);
     }
 
-    socket.on('connect', () => { syncProfile(); });
+    function updateVolume() { notifSound.volume = document.getElementById('volControl').value; }
 
-    socket.on('update_users', (users) => {
-        allUsers = users;
-        filterUsers();
-    });
-
-    function filterUsers() {
-        const query = document.getElementById('searchInput').value.toLowerCase();
-        const box = document.getElementById('usersList');
-        box.innerHTML = '';
-        
-        let count = 0;
-        allUsers.forEach(u => {
-            if(u.peer_id === myPeerId) return;
-            count++;
-            if(u.pseudo.toLowerCase().includes(query) || u.pays.toLowerCase().includes(query)) {
-                const imgSrc = u.photo ? u.photo : 'https://via.placeholder.com/35?text=' + (u.pseudo ? u.pseudo.charAt(0) : '?');
-                box.innerHTML += `
-                    <div class="user-card">
-                        <img src="${imgSrc}" class="user-avatar-mini">
-                        <div style="flex:1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                            <b style="font-size: 12px;">${u.pseudo}</b> <small style="font-size: 10px;">(${u.age}ans, ${u.pays})</small>
-                        </div>
-                        <button onclick="selectUser('${u.peer_id}', '${u.pseudo}', '${u.pays}', '${u.photo || ''}')" style="font-size:10px; padding:4px 8px;">Chat</button>
-                    </div>`;
+    socket.on('peer_discovery', (peersList) => {
+        peersList.forEach(p => {
+            if (p.peer_id !== myPeerId) {
+                onlinePeersData[p.peer_id] = p.pseudo;
+                connectToPeer(p.peer_id);
             }
         });
-        document.getElementById('countOnline').innerText = count;
-    }
-
-    function selectUser(id, name, pays, photo) {
-        activeTargetId = id;
-        document.getElementById('targetName').innerText = name;
-        document.getElementById('targetDetails').innerText = `ID: ${id} | Pays: ${pays}`;
-        
-        const avatarBox = document.getElementById('targetAvatarBox');
-        if(photo) {
-            avatarBox.innerHTML = `<img src="${photo}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
-        } else {
-            avatarBox.innerHTML = name.charAt(0).toUpperCase();
-        }
-
-        saveContact({ peer_id: id, pseudo: name, pays: pays, photo: photo });
-
-        if(window.innerWidth <= 900) {
-            toggleSidebar();
-        }
-
-        socket.emit('message_seen', { target_id: activeTargetId, reader_id: myPeerId });
-        renderCurrentChat();
-    }
-
-    function renderCurrentChat() {
-        const b = document.getElementById('msgBox');
-        b.innerHTML = '';
-
-        if(!activeTargetId) {
-            b.innerHTML = `<div class="msg-bubble remote"><span class="msg-sender-name">Système AOO1</span>🌸 Veuillez sélectionner une discussion.</div>`;
-            return;
-        }
-
-        const history = chatHistories[activeTargetId] || [];
-        if(history.length === 0) {
-            b.innerHTML = `<div class="msg-bubble remote"><span class="msg-sender-name">Système AOO1</span>Début de la conversation.</div>`;
-            return;
-        }
-
-        history.forEach(m => {
-            displayMsgOnScreen(m);
-        });
-
-        b.scrollTop = b.scrollHeight;
-    }
-
-    function saveMessageToHistory(peerId, msgObj) {
-        if(!chatHistories[peerId]) {
-            chatHistories[peerId] = [];
-        }
-        chatHistories[peerId].push(msgObj);
-        localStorage.setItem('aoo1_chats', JSON.stringify(chatHistories));
-    }
-
-    function sendText() {
-        const txt = document.getElementById('chatInput').value.trim();
-        if(!txt || !activeTargetId) return alert("Sélectionnez un correspondant !");
-
-        const myName = document.getElementById('myPseudo').value.trim() || 'Anonyme';
-        const msgId = 'msg_' + Date.now();
-
-        const msgObj = {
-            sender: myName,
-            text: txt,
-            type: 'text',
-            isLocal: true,
-            msgId: msgId
-        };
-
-        socket.emit('send_chat_message', {
-            target_id: activeTargetId,
-            sender_id: myPeerId,
-            sender_name: myName,
-            sender_photo: myPhoto,
-            msg_id: msgId,
-            type: 'text',
-            text: txt
-        });
-
-        saveMessageToHistory(activeTargetId, msgObj);
-        displayMsgOnScreen(msgObj);
-
-        document.getElementById('chatInput').value = '';
-    }
-
-    function sendMedia() {
-        const file = document.getElementById('mediaInput').files[0];
-        if(!file || !activeTargetId) return alert("Sélectionnez un ami !");
-
-        const myName = document.getElementById('myPseudo').value.trim() || 'Anonyme';
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            let fileType = 'file';
-            if(file.type.startsWith('image/')) fileType = 'image';
-            if(file.type.startsWith('video/')) fileType = 'video';
-            if(file.type.startsWith('audio/')) fileType = 'audio';
-
-            const msgObj = {
-                sender: myName,
-                type: fileType,
-                data: e.target.result,
-                fileName: file.name,
-                isLocal: true
-            };
-
-            socket.emit('send_chat_message', {
-                target_id: activeTargetId,
-                sender_id: myPeerId,
-                sender_name: myName,
-                sender_photo: myPhoto,
-                type: fileType,
-                data: e.target.result,
-                fileName: file.name
-            });
-
-            saveMessageToHistory(activeTargetId, msgObj);
-            displayMsgOnScreen(msgObj);
-        };
-        reader.readAsDataURL(file);
-    }
-
-    socket.on('receive_chat_message', (d) => {
-        if(blockedContacts.includes(d.sender_id)) return;
-
-        notifSound.play().catch(()=>{});
-        if(Notification.permission === "granted") {
-            new Notification(`Nouveau message de ${d.sender_name}`);
-        }
-
-        const msgObj = {
-            sender: d.sender_name,
-            type: d.type,
-            text: d.text,
-            data: d.data,
-            fileName: d.fileName,
-            isLocal: false
-        };
-
-        saveMessageToHistory(d.sender_id, msgObj);
-        updateContactPhoto(d.sender_id, d.sender_photo);
-
-        if(activeTargetId === d.sender_id) {
-            displayMsgOnScreen(msgObj);
-            socket.emit('message_seen', { target_id: d.sender_id, reader_id: myPeerId });
-        }
+        renderPeersList();
     });
 
-    socket.on('confirm_seen', (d) => {
-        document.querySelectorAll('.msg-status').forEach(el => el.innerText = "Vu 👀");
-    });
-
-    function displayMsgOnScreen(m) {
-        const b = document.getElementById('msgBox');
-        const bubbleType = m.isLocal ? 'local' : 'remote';
-
-        if(m.type === 'text') {
-            const statusHtml = m.isLocal ? `<span class="msg-status" id="${m.msgId || ''}">Envoyé 📩</span>` : '';
-            b.innerHTML += `
-                <div class="msg-bubble ${bubbleType}">
-                    <span class="msg-sender-name">${m.sender}</span>
-                    <span>${m.text}</span>
-                    ${statusHtml}
-                </div>`;
-        } else if(m.type === 'vocal' || m.type === 'audio') {
-            b.innerHTML += `
-                <div class="msg-bubble ${bubbleType}">
-                    <span class="msg-sender-name">${m.sender}</span>
-                    <audio src="${m.data}" controls style="max-width:200px; height:32px;"></audio>
-                </div>`;
-        } else {
-            let content = '';
-            if(m.type === 'image') content = `<img src="${m.data}" class="media-preview">`;
-            else if(m.type === 'video') content = `<video src="${m.data}" controls class="media-preview"></video>`;
-            else content = `📁 <a href="${m.data}" download="${m.fileName}" style="color:#ff79c6;">${m.fileName}</a>`;
-
-            b.innerHTML += `
-                <div class="msg-bubble ${bubbleType}">
-                    <span class="msg-sender-name">${m.sender}</span>
-                    ${content}
-                </div>`;
-        }
-        b.scrollTop = b.scrollHeight;
-    }
-
-    let rec = null, chunks = [], isRecording = false;
-    async function toggleVocal() {
-        if(!activeTargetId) return alert("Sélectionnez un contact !");
-        const myName = document.getElementById('myPseudo').value.trim() || 'Anonyme';
-        
-        if(!isRecording) {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            rec = new MediaRecorder(stream);
-            chunks = [];
-            rec.ondataavailable = (e) => chunks.push(e.data);
-            rec.onstop = () => {
-                const blob = new Blob(chunks, { type: 'audio/webm' });
-                const r = new FileReader();
-                r.readAsDataURL(blob);
-                r.onloadend = () => {
-                    const msgObj = {
-                        sender: myName,
-                        type: 'vocal',
-                        data: r.result,
-                        isLocal: true
-                    };
-
-                    socket.emit('send_chat_message', {
-                        target_id: activeTargetId,
-                        sender_id: myPeerId,
-                        sender_name: myName,
-                        sender_photo: myPhoto,
-                        type: 'vocal',
-                        data: r.result
-                    });
-
-                    saveMessageToHistory(activeTargetId, msgObj);
-                    displayMsgOnScreen(msgObj);
-                };
-            };
-            rec.start();
-            isRecording = true;
-            document.getElementById('vocalBtn').style.background = '#ff5555';
-        } else {
-            rec.stop();
-            isRecording = false;
-            document.getElementById('vocalBtn').style.background = '';
-        }
-    }
-
-    async function startCall() {
-        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        document.getElementById('localVideo').srcObject = localStream;
-        document.getElementById('videoGrid').style.display = 'block';
-        document.getElementById('camToggleBtn').style.display = 'inline-flex';
-        document.getElementById('endCallBtn').style.display = 'inline-flex';
-        document.getElementById('startCallBtn').style.display = 'none';
-    }
-
-    function toggleCamera() {
-        if(localStream) {
-            const videoTrack = localStream.getVideoTracks()[0];
-            if(videoTrack) {
-                isCamOn = !isCamOn;
-                videoTrack.enabled = isCamOn;
-                document.getElementById('camToggleBtn').innerText = isCamOn ? "📷 Cam" : "📷 Activer";
-            }
-        }
-    }
-
-    function endCall() {
-        if(localStream) {
-            localStream.getTracks().forEach(track => track.stop());
-            localStream = null;
-        }
-        document.getElementById('videoGrid').style.display = 'none';
-        document.getElementById('camToggleBtn').style.display = 'none';
-        document.getElementById('endCallBtn').style.display = 'none';
-        document.getElementById('startCallBtn').style.display = 'inline-flex';
-    }
-
-    function saveContact(c) {
-        let contacts = JSON.parse(localStorage.getItem('aoo1_contacts') || '[]');
-        const existingIndex = contacts.findIndex(x => x.peer_id === c.peer_id);
-        if(existingIndex === -1) {
-            contacts.push(c);
-        } else {
-            if(c.photo) contacts[existingIndex].photo = c.photo;
-        }
-        localStorage.setItem('aoo1_contacts', JSON.stringify(contacts));
-        renderContacts();
-    }
-
-    function updateContactPhoto(peerId, photo) {
-        if(!photo) return;
-        let contacts = JSON.parse(localStorage.getItem('aoo1_contacts') || '[]');
-        const target = contacts.find(x => x.peer_id === peerId);
-        if(target) {
-            target.photo = photo;
-            localStorage.setItem('aoo1_contacts', JSON.stringify(contacts));
-            renderContacts();
-        }
-    }
-
-    function toggleBlockContact(id) {
-        if(blockedContacts.includes(id)) {
-            blockedContacts = blockedContacts.filter(x => x !== id);
-            alert("Contact débloqué !");
-        } else {
-            blockedContacts.push(id);
-            alert("Contact bloqué ! SES MESSAGES NE S'AFFICHERONT PLUS.");
-        }
-        localStorage.setItem('aoo1_blocked', JSON.stringify(blockedContacts));
-        renderContacts();
-    }
-
-    function deleteContact(id) {
-        let contacts = JSON.parse(localStorage.getItem('aoo1_contacts') || '[]');
-        contacts = contacts.filter(x => x.peer_id !== id);
-        localStorage.setItem('aoo1_contacts', JSON.stringify(contacts));
-        
-        delete chatHistories[id];
-        localStorage.setItem('aoo1_chats', JSON.stringify(chatHistories));
-
-        if(activeTargetId === id) {
-            activeTargetId = null;
-            document.getElementById('targetName').innerText = "Choisissez un ami";
-            document.getElementById('targetDetails').innerText = "Aucune session active";
-            document.getElementById('targetAvatarBox').innerText = "?";
-            renderCurrentChat();
-        }
-
-        renderContacts();
-    }
-
-    function renderContacts() {
-        let contacts = JSON.parse(localStorage.getItem('aoo1_contacts') || '[]');
-        const box = document.getElementById('savedContactsList');
+    function renderPeersList() {
+        const box = document.getElementById('peersBox');
         box.innerHTML = '';
-        contacts.forEach(c => {
-            const isBlocked = blockedContacts.includes(c.peer_id);
-            const photoSrc = c.photo ? c.photo : 'https://via.placeholder.com/35?text=' + (c.pseudo ? c.pseudo.charAt(0) : '?');
+        Object.keys(onlinePeersData).forEach(id => {
             box.innerHTML += `
-                <div class="user-card">
-                    <img src="${photoSrc}" class="user-avatar-mini">
-                    <div style="flex:1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><b style="font-size: 12px;">${c.pseudo}</b> ${isBlocked ? '🚫' : ''}</div>
-                    <button onclick="selectUser('${c.peer_id}', '${c.pseudo}', '${c.pays}', '${c.photo || ''}')" style="font-size:10px; padding:3px 6px;">Chat</button>
-                    <button onclick="toggleBlockContact('${c.peer_id}')" title="Bloquer/Débloquer" style="background:#ffb86c; font-size:10px; padding:3px 5px;">🚫</button>
-                    <button onclick="deleteContact('${c.peer_id}')" title="Supprimer" style="background:#ff5555; font-size:10px; padding:3px 5px;">🗑️</button>
+                <div class="user-card" onclick="switchSalon('${id}')" style="cursor:pointer;">
+                    <div style="flex:1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        <b style="font-size: 11px;">🟢 ${onlinePeersData[id]}</b>
+                    </div>
+                    <button style="font-size:9px; padding:2px 6px;">PV</button>
                 </div>`;
         });
     }
-    renderContacts();
+
+    socket.on('connect', () => { syncProfile(); });
 </script>
 
 </body>
