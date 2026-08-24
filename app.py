@@ -15,16 +15,15 @@ limiter = Limiter(
     storage_uri="memory://"
 )
 
-# Configuration WebSocket ultra-rapide (Ping ultra court pour P2P instantane)
+# SocketIO restaure avec buffers augmentes et compression
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",
     ping_timeout=5,
     ping_interval=2,
-    max_http_buffer_size=5e7
+    max_http_buffer_size=10e7  # Support max 100MB pour transferts rapides
 )
 
-# Registry des pairs en ligne
 active_peers = {}
 
 @app.route('/')
@@ -50,13 +49,11 @@ def handle_register(data):
             'pays': data.get('pays', 'N/A'),
             'photo': data.get('photo', '')
         }
-        # Diffusion instantanee de la liste des pairs connectes
         emit('peer_discovery', list(active_peers.values()), to='global_room')
 
 @socketio.on('send_chat_message')
 def handle_chat_message(data):
     target = data.get('target', 'main')
-    # Routine salon public vs Message prive (PV)
     if target in ['main', 'fomo', 'talk'] or str(target).startswith('custom_'):
         emit('chat_message', data, to='global_room', include_self=False)
     else:
@@ -90,5 +87,5 @@ def handle_disconnect():
     emit('peer_discovery', list(active_peers.values()), to='global_room')
 
 if __name__ == '__main__':
-    print("🚀 Serveur AOO1 V1.7 Instant-P2P Actif sur port 5000...")
+    print("🚀 Serveur AOO1 V1.8 Ultra-Fast Media Transfert Actif sur port 5000...")
     socketio.run(app, host='0.0.0.0', port=5000, debug=False)
