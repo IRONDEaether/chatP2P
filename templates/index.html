@@ -53,6 +53,13 @@
             z-index: 10;
         }
 
+        .top-action-bar {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
         .avatar-container {
             width: 70px;
             height: 70px;
@@ -342,7 +349,7 @@
 
         @media (max-width: 820px) {
             .main-app { flex-direction: column; height: 100dvh; }
-            .sidebar { width: 100%; min-width: 100%; max-height: 220px; }
+            .sidebar { width: 100%; min-width: 100%; max-height: 240px; }
             .video-grid { grid-template-columns: 1fr; }
         }
     </style>
@@ -352,6 +359,19 @@
 <div class="main-app">
     <!-- Sidebar -->
     <div class="sidebar glass-panel">
+        
+        <!-- BOUTIQUE ET VOLUME REPLACÉS EN HAUT -->
+        <div class="top-action-bar">
+            <button onclick="openShop()" style="background:#50fa7b; color:#000; width:100%;">🛍️ BOUTIQUE (50 Titres & Salons)</button>
+            <div style="background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                <label style="font-size:9px; color:#ff79c6; display:flex; justify-content:space-between;">
+                    <span>🔊 Volume Notifications :</span>
+                    <span id="volValText">5%</span>
+                </label>
+                <input type="range" id="volControl" min="0" max="0.3" step="0.01" value="0.05" style="width:100%;" onchange="updateVolume()">
+            </div>
+        </div>
+
         <div style="text-align: center;">
             <div class="avatar-container" onclick="document.getElementById('photoInput').click()">
                 <span id="avatarText">?</span>
@@ -406,18 +426,12 @@
             </select>
         </div>
 
-        <button onclick="openShop()" style="background:#50fa7b; color:#000;">🛍️ Boutique (50 Titres & Salons)</button>
         <button onclick="openGuide()" style="background:#bd93f9; color:#000; margin-top:2px;">📜 Règles du Jeu & Guide</button>
 
         <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1);">
 
         <h5 style="font-size:10px; color:#8be9fd;">👥 PAIRS EN LIGNE (Cliquez pour voir profil/PV)</h5>
         <div id="peersBox" style="max-height: 120px; overflow-y: auto;"></div>
-
-        <div style="margin-top:auto;">
-            <label style="font-size:9px;">🔊 Volume Notifications :</label>
-            <input type="range" id="volControl" min="0" max="0.3" step="0.01" value="0.05" style="width:100%;" onchange="updateVolume()">
-        </div>
     </div>
 
     <!-- Container Chat Principal -->
@@ -542,7 +556,11 @@
 </div>
 
 <script>
-    const socket = io();
+    const socket = io({
+        reconnectionDelayMax: 500,
+        randomizationFactor: 0
+    });
+
     let myPeerId = localStorage.getItem('aoo1_id') || Math.floor(10000000 + Math.random() * 90000000).toString();
     localStorage.setItem('aoo1_id', myPeerId);
 
@@ -708,7 +726,6 @@
     }
 
     function broadcastP2P(payload) {
-        // Envoi double couche : WebRTC P2P + Reseau global SocketIO
         if (activeTarget !== 'main' && activeTarget !== 'fomo' && activeTarget !== 'talk' && !activeTarget.startsWith('custom_')) {
             if (peerConnections[activeTarget] && peerConnections[activeTarget].open) {
                 peerConnections[activeTarget].send(payload);
@@ -742,12 +759,12 @@
     socket.on('user_typing', (data) => {
         document.getElementById('typingNotice').innerText = `${data.pseudo} écrit...`;
         clearTimeout(typingTimeout);
-        typingTimeout = setTimeout(() => { document.getElementById('typingNotice').innerText = ''; }, 2000);
+        typingTimeout = setTimeout(() => { document.getElementById('typingNotice').innerText = ''; }, 1500);
     });
 
     function sendCurrentMsg() {
         const now = Date.now();
-        if(now - lastMsgTime < 500) return;
+        if(now - lastMsgTime < 300) return;
 
         const input = document.getElementById('chatInput');
         const txt = input.value.trim();
@@ -1204,7 +1221,11 @@
         reader.readAsDataURL(file);
     }
 
-    function updateVolume() { notifSound.volume = document.getElementById('volControl').value; }
+    function updateVolume() { 
+        const val = document.getElementById('volControl').value;
+        notifSound.volume = val; 
+        document.getElementById('volValText').innerText = Math.round((val / 0.3) * 100) + '%';
+    }
 
     socket.on('peer_discovery', (peersList) => {
         onlinePeersData = {};
