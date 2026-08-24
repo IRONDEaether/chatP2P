@@ -15,16 +15,16 @@ limiter = Limiter(
     storage_uri="memory://"
 )
 
-# Support des medias lourds (images, audio, video) jusqu'a 50MB
+# Configuration WebSocket ultra-rapide (Ping ultra court pour P2P instantane)
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",
-    ping_timeout=25,
-    ping_interval=10,
+    ping_timeout=5,
+    ping_interval=2,
     max_http_buffer_size=5e7
 )
 
-# Dictionnaire indexe directement par PEER_ID
+# Registry des pairs en ligne
 active_peers = {}
 
 @app.route('/')
@@ -56,18 +56,23 @@ def handle_register(data):
 @socketio.on('send_chat_message')
 def handle_chat_message(data):
     target = data.get('target', 'main')
-    # Message dans un salon public / groupe
+    # Routine salon public vs Message prive (PV)
     if target in ['main', 'fomo', 'talk'] or str(target).startswith('custom_'):
         emit('chat_message', data, to='global_room', include_self=False)
     else:
-        # Message prive cible
         dest = active_peers.get(target)
         if dest:
             emit('chat_message', data, to=dest['sid'])
 
 @socketio.on('typing')
 def handle_typing(data):
-    emit('user_typing', data, to='global_room', include_self=False)
+    target = data.get('target', 'main')
+    if target in ['main', 'fomo', 'talk'] or str(target).startswith('custom_'):
+        emit('user_typing', data, to='global_room', include_self=False)
+    else:
+        dest = active_peers.get(target)
+        if dest:
+            emit('user_typing', data, to=dest['sid'])
 
 @socketio.on('message_seen')
 def handle_seen(data):
@@ -85,5 +90,5 @@ def handle_disconnect():
     emit('peer_discovery', list(active_peers.values()), to='global_room')
 
 if __name__ == '__main__':
-    print("🚀 Serveur AOO1 V1.7 FIX — Canal Reseau Direct Actif sur port 5000...")
+    print("🚀 Serveur AOO1 V1.7 Instant-P2P Actif sur port 5000...")
     socketio.run(app, host='0.0.0.0', port=5000, debug=False)
